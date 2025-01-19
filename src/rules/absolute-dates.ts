@@ -17,6 +17,27 @@ const DATE_PATTERNS = {
   DASH_DMY: /^(\d{2})-(\d{2})-(\d{4})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?(Z|[+-]\d{2}:?\d{2})?)?$/
 };
 
+const MONTHS = {
+  jan: 1, january: 1,
+  feb: 2, february: 2,
+  mar: 3, march: 3,
+  apr: 4, april: 4,
+  may: 5,
+  jun: 6, june: 6,
+  jul: 7, july: 7,
+  aug: 8, august: 8,
+  sep: 9, september: 9,
+  oct: 10, october: 10,
+  nov: 11, november: 11,
+  dec: 12, december: 12
+};
+
+const ABSOLUTE_PATTERNS = {
+  ISO: /^(\d{4})-(\d{2})-(\d{2})$/,
+  MONTH_FIRST: /^(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s*(\d{4})?$/i,
+  DAY_FIRST: /^(\d{1,2})(?:st|nd|rd|th)?\s+(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s*,?\s*(\d{4})?$/i
+};
+
 function isValidDate(year: number, month: number, day: number, hours = 0, minutes = 0, seconds = 0): boolean {
   const date = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds));
   return date.getUTCFullYear() === year &&
@@ -86,6 +107,53 @@ function createDateParser(format: 'YMD' | 'MDY' | 'DMY') {
   };
 }
 
+function parseMonthName(monthStr: string): number {
+  const month = MONTHS[monthStr.toLowerCase() as keyof typeof MONTHS];
+  return month || 0;
+}
+
+function createMonthNameParser(format: 'MonthFirst' | 'DayFirst') {
+  return (matches: RegExpMatchArray): IntermediateParse | null => {
+    Logger.debug('Parsing month name date', {
+      format,
+      matches: matches.map(m => m),
+    });
+    
+    let year: number, month: number, day: number;
+    const currentYear = new Date().getFullYear();
+    
+    if (format === 'MonthFirst') {
+      month = parseMonthName(matches[1]);
+      day = parseInt(matches[2]);
+      year = matches[3] ? parseInt(matches[3]) : currentYear;
+    } else {
+      day = parseInt(matches[1]);
+      month = parseMonthName(matches[2]);
+      year = matches[3] ? parseInt(matches[3]) : currentYear;
+    }
+
+    if (!isValidDate(year, month, day)) {
+      Logger.debug('Invalid date components', { year, month, day });
+      return null;
+    }
+
+    return {
+      type: 'absolute',
+      tokens: [matches[0]],
+      pattern: `absolute-${format.toLowerCase()}`,
+      captures: {
+        year: year.toString(),
+        month: month.toString().padStart(2, '0'),
+        day: day.toString().padStart(2, '0'),
+        hours: '0',
+        minutes: '0',
+        seconds: '0',
+        offsetMinutes: '0'
+      }
+    };
+  };
+}
+
 export const absoluteDatesRule: RuleModule = {
   name: 'absolute-dates',
   patterns: [
@@ -143,6 +211,16 @@ export const absoluteDatesRule: RuleModule = {
       name: 'dash-dmy',
       regex: DATE_PATTERNS.DASH_DMY,
       parse: createDateParser('DMY')
+    },
+    {
+      name: 'month-first',
+      regex: ABSOLUTE_PATTERNS.MONTH_FIRST,
+      parse: createMonthNameParser('MonthFirst')
+    },
+    {
+      name: 'day-first',
+      regex: ABSOLUTE_PATTERNS.DAY_FIRST,
+      parse: createMonthNameParser('DayFirst')
     }
   ],
   interpret: (intermediate: IntermediateParse): ParseResult => {

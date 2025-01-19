@@ -124,4 +124,63 @@ describe('Absolute Dates Rule', () => {
       expect(result?.confidence).toBe(1.0);
     });
   });
+
+  describe('Month name formats', () => {
+    it('should parse month-first format with full month names', () => {
+      const variations = [
+        'January 5, 2025',
+        'January 5 2025',
+        'January 5th, 2025',
+        'January 5th 2025'
+      ];
+      variations.forEach(input => {
+        const result = parser.parse(input);
+        expect(result?.start.toISOString().slice(0, 10))
+          .toBe('2025-01-05');
+      });
+    });
+
+    it('should parse month-first format with abbreviated month names', () => {
+      const variations = [
+        'Jan 5, 2025',
+        'Jan 5 2025',
+        'Jan 5th, 2025',
+        'Jan 5th 2025'
+      ];
+      variations.forEach(input => {
+        const result = parser.parse(input);
+        expect(result?.start.toISOString().slice(0, 10))
+          .toBe('2025-01-05');
+      });
+    });
+
+    it('should parse day-first format', () => {
+      const variations = [
+        '5 January 2025',
+        '5th January 2025',
+        '5 Jan 2025',
+        '5th Jan 2025'
+      ];
+      variations.forEach(input => {
+        const result = parser.parse(input);
+        expect(result?.start.toISOString().slice(0, 10))
+          .toBe('2025-01-05');
+      });
+    });
+
+    it('should use current year when year is omitted', () => {
+      const currentYear = new Date().getFullYear();
+      const variations = [
+        'January 5',
+        'Jan 5',
+        '5 January',
+        '5th Jan'
+      ];
+      variations.forEach(input => {
+        const result = parser.parse(input);
+        expect(result?.start.toISOString().slice(0, 10))
+          .toBe(`${currentYear}-01-05`);
+      });
+    });
+  });
 }); 
