@@ -16,15 +16,17 @@ A modular, preference-based date/time parser that handles natural language expre
 
 ## 🚀 Quick Start
 
-typescript
+```typescript
 import { NLDP } from 'natural-language-date-parser';
+
 const parser = new NLDP({
-referenceDate: new Date(),
-weekStartsOn: 1, // Monday
-timeZone: 'America/New_York'
+    referenceDate: new Date(),
+    weekStartsOn: 1, // Monday
+    timeZone: 'America/New_York'
 });
+
 const result = parser.parse('next Monday at 3pm');
-console.log(result);
+console.log(result);``
 
 ## 📖 Supported Expressions
 
@@ -37,25 +39,26 @@ console.log(result);
 
 ## ⚙️ Configuration
 
-typescript
+```typescript
 interface DateParsePreferences {
-referenceDate?: Date;
-weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
-timeZone?: string;
-debug?: boolean;
-}
+    referenceDate?: Date;
+    weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+    timeZone?: string;
+    debug?: boolean;
+}```
 
 ## 🔍 Debug Mode
 
 Enable detailed parsing traces:
 
-typescript
+```typescript
 const result = parser.parse('next Monday at 3pm', { debug: true });
-
+```
 ## 🧪 Testing
 
-bash
+```bash
 npm test
+```
 
 ## 🤝 Contributing
 
