@@ -31,12 +31,56 @@ console.log(result);
 
 ## 📖 Supported Expressions
 
-- **Absolute Dates**: "2024-03-20", "03/20/2024"
-- **Date-Time**: "2024-03-20T15:30:00Z", "March 20th at 3:30 PM"
-- **Time**: "3:30 PM", "15:30", "noon", "midnight"
-- **Relative**: "today", "tomorrow", "next week"
-- **Fuzzy Ranges**: "next weekend", "beginning of month"
-- **Combined**: "tomorrow at 3pm", "next Monday at noon"
+### 🗓 Absolute Dates
+- ISO format: "2024-03-20", "03/20/2024"
+- Month names: "January 5, 2025", "Jan 5th, 2025"
+- Day first: "5 January 2025", "5th Jan 2025"
+- Current year: "January 5", "5th Jan"
+
+### ⏰ Time
+- 12-hour: "3:30 PM", "3pm"
+- 24-hour: "15:30"
+- Special times: "noon", "midnight"
+- With dates: "March 20th at 3:30 PM"
+
+### 📅 Relative Days
+- Simple: "today", "tomorrow", "yesterday"
+- Extended: "day after tomorrow", "day before yesterday"
+- Offset: "3 days from now", "2 days ago"
+- Next weekday: "next Monday", "next Friday"
+
+### 📊 Ordinal Days
+- Month-based: "first Monday in March", "last Friday in March"
+- Numeric: "2nd Thursday in March"
+- Month end: "last day of month", "penultimate day"
+- Position: "third to last day of month"
+
+### 📦 Week Expressions
+- Simple: "this week", "next week", "last week"
+- Extended: "week after next"
+- Offset: "3 weeks from now"
+- With weekday start preference
+
+### 📋 Month Parts
+- Segments: "early March", "mid March", "late March"
+- Halves: "first half of April", "second half of April"
+- Boundaries: "beginning of April", "end of March"
+
+### 🎯 Fuzzy Ranges
+- Weekends: "this weekend", "next weekend"
+- Multiple: "next 2 weekends", "following 3 weekends"
+- Month parts: "first 3 days of next month", "last 5 days of March"
+
+### 🔄 Combined Expressions
+- Date + Time: "tomorrow at 3pm", "next Monday at 3:30pm"
+- Relative + Time: "3 days from now at noon"
+- Ordinal + Time: "1st of April at midnight"
+
+All expressions support:
+- 🌍 Timezone awareness
+- 📊 Confidence scoring
+- 🎯 Range or single date output
+- 🐛 Detailed debug traces
 
 ## ⚙️ Configuration
 
