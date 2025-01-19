@@ -4,7 +4,7 @@ describe('Interface Types', () => {
   it('should allow valid DateParsePreferences', () => {
     const prefs: DateParsePreferences = {
       referenceDate: new Date(),
-      startOfWeek: 1,
+      weekStartsOn: 1,
       timeZone: 'America/New_York',
       debug: true
     };

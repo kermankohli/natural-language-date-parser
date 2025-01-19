@@ -3,10 +3,9 @@
  */
 export interface DateParsePreferences {
   referenceDate?: Date;        // Date to use as "now" for relative dates
-  startOfWeek?: 0 | 1 | 6;     // 0 = Sunday, 1 = Monday, 6 = Saturday
   timeZone?: string;           // IANA time zone identifier
+  weekStartsOn?: 0 | 1;        // 0 = Sunday, 1 = Monday
   debug?: boolean;             // Enable debug logging
-  weekStartDay?: 0 | 1;        // 0 = Sunday, 1 = Monday
 }
 
 /**

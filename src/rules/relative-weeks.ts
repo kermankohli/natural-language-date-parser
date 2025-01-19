@@ -1,7 +1,7 @@
 import { RuleModule, IntermediateParse, ParseResult, DateParsePreferences } from '../types/types';
 import { Logger } from '../utils/Logger';
 
-type WeekStartDay = DateParsePreferences['weekStartDay'];
+type WeekStartDay = DateParsePreferences['weekStartsOn'];
 
 /**
  * Convert any Date to pure UTC midnight (00:00:00.000Z).
@@ -28,19 +28,14 @@ function addWeeks(date: Date, weeks: number): Date {
 
 function getWeekStart(date: Date, weekStartsOn: NonNullable<WeekStartDay>): Date {
   const utcDate = toUtcMidnight(date);
-  const currentDay = utcDate.getUTCDay(); // 0-6, Sunday = 0
+  const currentDay = utcDate.getUTCDay();
   
-  Logger.debug('Getting week start', {
-    date: date.toISOString(),
-    utcDate: utcDate.toISOString(),
-    currentDay,
-    weekStartsOn
-  });
-
-  // Calculate days to subtract to reach the start of week
+  // For Sunday start (0):
+  // - If today is Sunday, start today
+  // - Otherwise, go back to last Sunday
   const daysToSubtract = weekStartsOn === 0
-    ? currentDay  // For Sunday start: go back currentDay days
-    : currentDay === 0 ? 6 : currentDay - 1;  // For Monday start: handle Sunday specially
+    ? (currentDay === 0 ? 0 : currentDay)  // Go back to last Sunday
+    : (currentDay === 0 ? 6 : currentDay - 1);  // Go back to last Monday
 
   Logger.debug('Calculated days to subtract', { daysToSubtract });
 
@@ -132,7 +127,7 @@ export const relativeWeeksRule: RuleModule = {
   ],
   interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult => {
     const referenceDate = prefs.referenceDate || new Date();
-    const weekStartsOn = prefs.weekStartDay === undefined ? 1 : prefs.weekStartDay;
+    const weekStartsOn = prefs.weekStartsOn ?? 1;
     const offset = parseInt(intermediate.captures.offset, 10);
     const returnRange = intermediate.captures.returnRange === 'true';
 

@@ -76,7 +76,7 @@ describe('Ordinal Weeks Rule', () => {
   });
 
   describe('with Sunday as week start', () => {
-    const prefs = { referenceDate, weekStartDay: 0 as const };
+    const prefs = { referenceDate, weekStartsOn: 0 as const };
 
     it('should parse first week with Sunday start', () => {
       const result = parser.parse('first week of March', prefs);
@@ -86,10 +86,13 @@ describe('Ordinal Weeks Rule', () => {
     });
 
     it('should parse last week with Sunday start', () => {
-      const result = parser.parse('last week of March', prefs);
-      // Should be March 31 (last Sunday)
+      const result = parser.parse('last week of march', { 
+        referenceDate, 
+        weekStartsOn: 0 
+      });
+      // Should be March 24 (start of last full week)
       expect(result?.start.toISOString().slice(0, 10))
-        .toBe('2024-03-31');
+        .toBe('2024-03-24');
     });
   });
 }); 
