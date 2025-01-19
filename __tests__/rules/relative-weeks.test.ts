@@ -72,7 +72,7 @@ describe('Relative Weeks Rule', () => {
   });
 
   describe('with Sunday as week start', () => {
-    const prefs = { referenceDate, weekStartDay: 0 as const };
+    const prefs = { referenceDate, weekStartsOn: 0 as const };
 
     it('should parse this week', () => {
       const result = parser.parse('this week', prefs);
