@@ -46,7 +46,8 @@ interface DateParsePreferences {
     weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
     timeZone?: string;
     debug?: boolean;
-}```
+}
+```
 
 ## 🔍 Debug Mode
 
