@@ -24,7 +24,7 @@ export interface ParseResult {
  * Intermediate parse result before final interpretation
  */
 export interface IntermediateParse {
-  type: 'absolute' | 'relative' | 'range' | 'time';
+  type: 'absolute' | 'relative' | 'range' | 'time' | 'ordinal';
   tokens: string[];           // Matched tokens
   pattern: string;            // Name of matched pattern
   captures: Record<string, string>; // Named captures from pattern match
