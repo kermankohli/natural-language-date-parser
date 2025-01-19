@@ -93,6 +93,22 @@ export const dateTimeRule: RuleModule = {
           }
         };
       }
+    },
+    {
+      name: 'simple-time',
+      regex: /^at\s+(?:(\d{1,2})(?::(\d{2}))?\s*(am|pm)|(noon|midnight))$/i,
+      parse: (matches: RegExpMatchArray): IntermediateParse => ({
+        type: 'time',
+        tokens: [matches[0]],
+        pattern: 'simple-time',
+        captures: matches[4] ? {
+          special: matches[4].toLowerCase()
+        } : {
+          hour: matches[1],
+          minute: matches[2] || '00',
+          meridiem: matches[3].toLowerCase()
+        }
+      })
     }
   ],
   interpret: (intermediate: IntermediateParse): ParseResult => {
@@ -104,24 +120,43 @@ export const dateTimeRule: RuleModule = {
         confidence: 1.0,
         text: intermediate.tokens[0]
       };
+    } else if (intermediate.pattern === 'simple-time') {
+      const { special, hour, minute, meridiem } = intermediate.captures;
+      let hours = special 
+        ? (special === 'noon' ? 12 : 0)  // noon = 12, midnight = 0
+        : parseInt(hour);
+      
+      // Convert 12-hour to 24-hour
+      if (meridiem === 'pm' && hours < 12) hours += 12;
+      if (meridiem === 'am' && hours === 12) hours = 0;
+
+      const date = new Date();
+      date.setUTCHours(hours, parseInt(minute || '0'), 0, 0);
+
+      return {
+        type: 'single',
+        start: date,
+        confidence: 1.0,
+        text: intermediate.tokens[0]
+      };
+    } else {
+      // Handle 12-hour format
+      const { year, month, day, hours, minutes, seconds } = intermediate.captures;
+      const date = new Date(Date.UTC(
+        parseInt(year),
+        parseInt(month) - 1,
+        parseInt(day),
+        parseInt(hours),
+        parseInt(minutes),
+        parseInt(seconds || '0')
+      ));
+
+      return {
+        type: 'single',
+        start: date,
+        confidence: 1.0,
+        text: intermediate.tokens[0]
+      };
     }
-
-    // Handle 12-hour format
-    const { year, month, day, hours, minutes, seconds } = intermediate.captures;
-    const date = new Date(Date.UTC(
-      parseInt(year),
-      parseInt(month) - 1,
-      parseInt(day),
-      parseInt(hours),
-      parseInt(minutes),
-      parseInt(seconds || '0')
-    ));
-
-    return {
-      type: 'single',
-      start: date,
-      confidence: 1.0,
-      text: intermediate.tokens[0]
-    };
   }
 }; 

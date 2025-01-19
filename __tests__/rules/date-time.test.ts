@@ -70,4 +70,23 @@ describe('DateTime Rule', () => {
       expect(parser.parse('2024-03-20 00:00 PM')).toBeNull();
     });
   });
+
+  describe('Simple time format', () => {
+    it('should parse time with at prefix', () => {
+      const result = parser.parse('at 3:30 PM');
+      expect(result?.start.getUTCHours()).toBe(15);
+      expect(result?.start.getUTCMinutes()).toBe(30);
+    });
+
+    it('should parse time without minutes', () => {
+      const result = parser.parse('at 9 PM');
+      expect(result?.start.getUTCHours()).toBe(21);
+      expect(result?.start.getUTCMinutes()).toBe(0);
+    });
+
+    it('should handle noon and midnight', () => {
+      expect(parser.parse('at noon')?.start.getUTCHours()).toBe(12);
+      expect(parser.parse('at midnight')?.start.getUTCHours()).toBe(0);
+    });
+  });
 }); 
