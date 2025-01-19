@@ -6,6 +6,7 @@ export interface DateParsePreferences {
   startOfWeek?: 0 | 1 | 6;     // 0 = Sunday, 1 = Monday, 6 = Saturday
   timeZone?: string;           // IANA time zone identifier
   debug?: boolean;             // Enable debug logging
+  weekStartDay?: 0 | 1;        // 0 = Sunday, 1 = Monday
 }
 
 /**
