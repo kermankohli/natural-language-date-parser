@@ -26,7 +26,8 @@ const parser = new NLDP({
 });
 
 const result = parser.parse('next Monday at 3pm');
-console.log(result);```
+console.log(result);
+```
 
 ## 📖 Supported Expressions
 
