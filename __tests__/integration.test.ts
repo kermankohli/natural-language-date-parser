@@ -114,4 +114,62 @@ describe('NLDP Integration Tests', () => {
     });
   });
 
+  describe('combined expressions', () => {
+    it('should parse date + time combinations', () => {
+      const result = parser.parse('tomorrow at 3pm');
+      expect(result?.start.toISOString()).toBe('2024-03-15T15:00:00.000Z');
+
+      const result2 = parser.parse('next Monday at 3:30pm');
+      expect(result2?.start.toISOString()).toBe('2024-03-18T15:30:00.000Z');
+    });
+
+    it('should parse relative days with time', () => {
+      const result = parser.parse('3 days from now at noon');
+      expect(result?.start.toISOString()).toBe('2024-03-17T12:00:00.000Z');
+    });
+
+    it('should parse ordinal days with time', () => {
+      const result = parser.parse('1st of April at midnight');
+      expect(result?.start.toISOString()).toBe('2024-04-01T00:00:00.000Z');
+    });
+  });
+
+  describe('timezone handling', () => {
+    it('should respect timezone in preferences', () => {
+      // Test with New York timezone (UTC-4 during DST)
+      const nyParser = new NLDP({ 
+        referenceDate,
+        timeZone: 'America/New_York'
+      });
+
+      // 3pm in New York is 7pm UTC during DST
+      const result = nyParser.parse('today at 3pm');
+      expect(result?.start.toISOString()).toBe('2024-03-14T19:00:00.000Z');
+
+      // Test with Tokyo timezone (UTC+9)
+      const tokyoParser = new NLDP({
+        referenceDate,
+        timeZone: 'Asia/Tokyo'
+      });
+
+      // 3pm in Tokyo is 6am UTC
+      const result2 = tokyoParser.parse('today at 3pm');
+      expect(result2?.start.toISOString()).toBe('2024-03-14T06:00:00.000Z');
+    });
+
+    it('should handle DST transitions', () => {
+      const nyParser = new NLDP({
+        referenceDate: new Date('2024-03-09T12:00:00Z'), // Day before DST
+        timeZone: 'America/New_York'
+      });
+
+      // Before DST change
+      const before = nyParser.parse('today at 3pm');
+      expect(before?.start.toISOString()).toBe('2024-03-09T20:00:00.000Z');
+
+      // After DST change
+      const after = nyParser.parse('tomorrow at 3pm');
+      expect(after?.start.toISOString()).toBe('2024-03-10T19:00:00.000Z');
+    });
+  });
 }); 

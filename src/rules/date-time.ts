@@ -1,20 +1,14 @@
 import { parseISO } from 'date-fns';
-import { RuleModule, IntermediateParse, ParseResult } from '../types/types';
+import { RuleModule, IntermediateParse, ParseResult, DateParsePreferences } from '../types/types';
 import { Logger } from '../utils/Logger';
-import { parseTimeString, timeComponentsToString } from '../utils/time-parser';
-
-const DATETIME_PATTERNS = {
-  // Match any ISO-like string and let date-fns handle it
-  ISO: /^\d{4}-\d{2}-\d{2}[T ].+$/,
-  SPACE_12H: /^(\d{4})-(\d{2})-(\d{2}) (\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)$/i
-};
+import { parseTimeString } from '../utils/time-parser';
 
 export const dateTimeRule: RuleModule = {
   name: 'datetime',
   patterns: [
     {
       name: 'iso-datetime',
-      regex: /.+/,
+      regex: /^(\d{4}-\d{2}-\d{2})[T ](\d{1,2}(?::(\d{2})){1,2}(?:[+-]\d{2}:?\d{2}|Z)?)$/i,
       parse: (matches: RegExpMatchArray): IntermediateParse | null => {
         const [input] = matches;
         const normalizedInput = input.toUpperCase();
@@ -42,32 +36,25 @@ export const dateTimeRule: RuleModule = {
         });
         if (!timeComponents) return null;
 
-        // Create UTC date using the components
-        const date = new Date(Date.UTC(
-          year,
-          month - 1,
-          day,
-          timeComponents.hours,
-          timeComponents.minutes,
-          timeComponents.seconds
-        ));
-
-        // Apply timezone offset if present
-        if (timeComponents.offsetMinutes !== 0) {
-          date.setMinutes(date.getMinutes() - timeComponents.offsetMinutes);
-        }
-
         return {
           type: 'absolute',
           tokens: [input],
           pattern: 'datetime-iso',
-          captures: { parsedDate: date.toISOString() }
+          captures: {
+            year: year.toString(),
+            month: month.toString(),
+            day: day.toString(),
+            hours: timeComponents.hours.toString(),
+            minutes: timeComponents.minutes.toString(),
+            seconds: timeComponents.seconds.toString(),
+            offsetMinutes: timeComponents.offsetMinutes.toString()
+          }
         };
       }
     },
     {
       name: 'space-12h',
-      regex: DATETIME_PATTERNS.SPACE_12H,
+      regex: /^(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?\s*(am|pm)$/i,
       parse: (matches: RegExpMatchArray): IntermediateParse | null => {
         const [, year, month, day, hours, minutes, seconds, meridiem] = matches;
         
@@ -75,7 +62,7 @@ export const dateTimeRule: RuleModule = {
         if (parseInt(month) > 12 || parseInt(month) < 1) return null;
         if (parseInt(day) > 31 || parseInt(day) < 1) return null;
         
-        const timeStr = [hours, minutes, seconds || '00'].join(':') + ' ' + meridiem;
+        const timeStr = [hours, minutes || '00', seconds || '00'].join(':') + ' ' + meridiem;
         
         Logger.debug('Parsing time component', { timeStr });
         const timeComponents = parseTimeString(timeStr, { allow12Hour: true });
@@ -89,7 +76,10 @@ export const dateTimeRule: RuleModule = {
             year,
             month,
             day,
-            ...timeComponentsToString(timeComponents)
+            hours: timeComponents.hours.toString(),
+            minutes: timeComponents.minutes.toString(),
+            seconds: timeComponents.seconds.toString(),
+            offsetMinutes: timeComponents.offsetMinutes.toString()
           }
         };
       }
@@ -104,14 +94,14 @@ export const dateTimeRule: RuleModule = {
         captures: matches[4] ? {
           special: matches[4].toLowerCase()
         } : {
-          hour: matches[1],
-          minute: matches[2] || '00',
+          hours: matches[1],
+          minutes: matches[2] || '00',
           meridiem: matches[3].toLowerCase()
         }
       })
     }
   ],
-  interpret: (intermediate: IntermediateParse): ParseResult => {
+  interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult | null => {
     // Handle both ISO and 12-hour formats
     if ('parsedDate' in intermediate.captures) {
       return {
@@ -121,17 +111,17 @@ export const dateTimeRule: RuleModule = {
         text: intermediate.tokens[0]
       };
     } else if (intermediate.pattern === 'simple-time') {
-      const { special, hour, minute, meridiem } = intermediate.captures;
-      let hours = special 
+      const { special, hours, minutes, meridiem } = intermediate.captures;
+      let finalHours = special 
         ? (special === 'noon' ? 12 : 0)  // noon = 12, midnight = 0
-        : parseInt(hour);
+        : parseInt(hours);
       
       // Convert 12-hour to 24-hour
-      if (meridiem === 'pm' && hours < 12) hours += 12;
-      if (meridiem === 'am' && hours === 12) hours = 0;
+      if (meridiem === 'pm' && finalHours < 12) finalHours += 12;
+      if (meridiem === 'am' && finalHours === 12) finalHours = 0;
 
       const date = new Date();
-      date.setUTCHours(hours, parseInt(minute || '0'), 0, 0);
+      date.setUTCHours(finalHours, parseInt(minutes || '0'), 0, 0);
 
       return {
         type: 'single',
@@ -140,8 +130,8 @@ export const dateTimeRule: RuleModule = {
         text: intermediate.tokens[0]
       };
     } else {
-      // Handle 12-hour format
-      const { year, month, day, hours, minutes, seconds } = intermediate.captures;
+      // Handle absolute dates with time
+      const { year, month, day, hours, minutes, seconds, offsetMinutes } = intermediate.captures;
       const date = new Date(Date.UTC(
         parseInt(year),
         parseInt(month) - 1,
@@ -150,6 +140,11 @@ export const dateTimeRule: RuleModule = {
         parseInt(minutes),
         parseInt(seconds || '0')
       ));
+
+      // Apply timezone offset if present
+      if (offsetMinutes) {
+        date.setMinutes(date.getMinutes() - parseInt(offsetMinutes));
+      }
 
       return {
         type: 'single',

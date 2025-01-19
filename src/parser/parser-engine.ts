@@ -1,16 +1,16 @@
 import { DateParsePreferences, ParseResult, RuleModule, IntermediateParse } from '../types/types';
 import { tokenize, TokenizerOptions } from '../tokenizer/tokenizer';
 import { DebugTrace } from '../utils/debug-trace';
+import { Logger } from '../utils/Logger';
 
 export class ParserEngine {
   private rules: RuleModule[] = [];
-  private tokenizerOptions: TokenizerOptions = {
-    preserveQuotes: false,
-    normalizeSpaces: true,
-    lowercaseTokens: true
-  };
+  private tokenizerOptions: TokenizerOptions = {};
+  private defaultPreferences: DateParsePreferences = {};
 
-  constructor(private defaultPreferences: DateParsePreferences = {}) {}
+  constructor(preferences: DateParsePreferences = {}) {
+    this.defaultPreferences = preferences;
+  }
 
   /**
    * Register a new rule module
@@ -24,6 +24,8 @@ export class ParserEngine {
    */
   parse(input: string, preferences: DateParsePreferences = {}): ParseResult | null {
     const mergedPrefs = { ...this.defaultPreferences, ...preferences };
+
+    // Regular parsing flow
     const tokens = tokenize(input, this.tokenizerOptions);
 
     if (mergedPrefs.debug) {
@@ -70,6 +72,34 @@ export class ParserEngine {
           }
         }
       }
+    }
+
+    // If no direct match found, check if this is a combined date + time expression
+    const combinedMatch = input.match(/^(.+)\s+at\s+(.+)$/i);
+    if (combinedMatch) {
+      const [, datePart, timePart] = combinedMatch;
+      
+      // Parse date and time parts separately
+      const dateResult = this.parse(datePart, mergedPrefs);
+      if (!dateResult) return null;
+
+      const timeResult = this.parse(`at ${timePart}`, mergedPrefs);
+      if (!timeResult) return null;
+
+      // Combine the results
+      const combinedDate = new Date(dateResult.start);
+      combinedDate.setUTCHours(
+        timeResult.start.getUTCHours(),
+        timeResult.start.getUTCMinutes(),
+        timeResult.start.getUTCSeconds()
+      );
+
+      return {
+        type: 'single',
+        start: combinedDate,
+        confidence: Math.min(dateResult.confidence, timeResult.confidence),
+        text: input
+      };
     }
 
     if (mergedPrefs.debug) {
