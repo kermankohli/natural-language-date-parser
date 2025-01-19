@@ -1,5 +1,6 @@
 import { DateParsePreferences, ParseResult, RuleModule, IntermediateParse } from '../types/types';
 import { tokenize, TokenizerOptions } from '../tokenizer/tokenizer';
+import { DebugTrace } from '../utils/debug-trace';
 
 export class ParserEngine {
   private rules: RuleModule[] = [];
@@ -26,7 +27,13 @@ export class ParserEngine {
     const tokens = tokenize(input, this.tokenizerOptions);
 
     if (mergedPrefs.debug) {
-      console.log('Tokens:', tokens);
+      DebugTrace.startTrace(input);
+      DebugTrace.addRuleMatch({
+        ruleName: 'tokenizer',
+        input,
+        matched: true,
+        tokens
+      });
     }
 
     // Try each rule module
@@ -36,11 +43,16 @@ export class ParserEngine {
         const joinedTokens = tokens.join(' ');
         const matches = joinedTokens.match(pattern.regex);
 
-        if (matches) {
-          if (mergedPrefs.debug) {
-            console.log(`Matched pattern "${pattern.name}" in rule "${rule.name}"`);
-          }
+        if (mergedPrefs.debug) {
+          DebugTrace.addRuleMatch({
+            ruleName: `${rule.name}/${pattern.name}`,
+            input: joinedTokens,
+            matched: !!matches,
+            matchedGroups: matches ? Array.from(matches) : undefined
+          });
+        }
 
+        if (matches) {
           // Get intermediate parse result
           const intermediate = pattern.parse(matches, mergedPrefs);
           if (!intermediate) continue;
@@ -48,6 +60,9 @@ export class ParserEngine {
           // Convert to final result
           const result = rule.interpret(intermediate, mergedPrefs);
           if (result) {
+            if (mergedPrefs.debug) {
+              DebugTrace.setFinalResult(result);
+            }
             return {
               ...result,
               text: input // Include original input text
@@ -55,6 +70,10 @@ export class ParserEngine {
           }
         }
       }
+    }
+
+    if (mergedPrefs.debug) {
+      DebugTrace.setFinalResult(null);
     }
 
     return null;
