@@ -8,7 +8,11 @@
     "test": "jest",
     "dev": "ts-node src/index.ts"
   },
-  "keywords": ["date", "parser", "time"],
+  "keywords": [
+    "date",
+    "parser",
+    "time"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
@@ -18,5 +22,11 @@
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@types/uuid": "^10.0.0",
+    "@types/winston": "^2.4.4",
+    "uuid": "^11.0.5",
+    "winston": "^3.17.0"
   }
-} 
+}
