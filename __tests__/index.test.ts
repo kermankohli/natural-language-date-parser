@@ -1,4 +1,4 @@
-import { VERSION } from './index';
+import { VERSION } from '../src/index';
 
 describe('Date Parser', () => {
   it('should have a version number', () => {
