@@ -15,8 +15,8 @@ export function parseTimeString(
 ): TimeComponents | null {
   Logger.debug('Parsing time string', { timeStr, options });
 
-  const TIME_24H = /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(Z|[+-]\d{1,2}(?::?\d{2})?)?$/i;
-  const TIME_12H = /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)(?:\s*(Z|[+-]\d{1,2}(?::?\d{2})?)?)?$/i;
+  const TIME_24H = /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(Z|[+-]\d{2}:\d{2})?$/i;
+  const TIME_12H = /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)(?:\s*(Z|[+-]\d{2}:\d{2})?)?$/i;
 
   let match = timeStr.match(TIME_24H);
   let is12Hour = false;
@@ -40,8 +40,8 @@ export function parseTimeString(
   // Handle 12-hour format first
   if (is12Hour) {
     const meridiem = match[4].toLowerCase();
-    if (hours > 12) return null;  // 13:00 PM is invalid
-    if (hours === 0 && meridiem === 'pm') return null; // 00:00 PM is invalid
+    // Validate 12-hour format
+    if (hours > 12 || (hours === 0 && meridiem === 'pm')) return null;
     
     if (meridiem === 'pm') {
       hours = hours === 12 ? 12 : hours + 12;
@@ -59,7 +59,7 @@ export function parseTimeString(
     if (timezone.toUpperCase() === 'Z') {
       offsetMinutes = 0;
     } else {
-      const tzMatch = timezone.match(/([+-])(\d{1,2})(?::?(\d{2}))?/);
+      const tzMatch = timezone.match(/([+-])(\d{2})(?::?(\d{2}))?/);
       if (tzMatch) {
         const [, sign, tzHours, tzMinutes = '0'] = tzMatch;
         const tzH = parseInt(tzHours);
