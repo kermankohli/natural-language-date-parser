@@ -1,4 +1,4 @@
-import { DateParsePreferences, ParseResult } from '../src/types';
+import { DateParsePreferences, ParseResult } from '../src/types/types';
 
 describe('Interface Types', () => {
   it('should allow valid DateParsePreferences', () => {

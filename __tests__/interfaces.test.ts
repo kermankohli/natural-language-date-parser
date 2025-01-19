@@ -1,4 +1,4 @@
-import { DateParsePreferences, ParseResult, RuleModule } from '../src/interfaces';
+import { DateParsePreferences, ParseResult, RuleModule } from '../src/types/types';
 
 describe('Interface Types', () => {
   it('should allow valid DateParsePreferences', () => {
