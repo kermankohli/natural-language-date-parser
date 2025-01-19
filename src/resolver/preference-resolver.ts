@@ -32,18 +32,54 @@ export class PreferenceResolver {
     const dateResult = results.find(r => r.type === 'single' && r.start.getFullYear() > 1970);
     const timeResult = results.find(r => r.type === 'single' && r.start.getFullYear() === 1970);
 
+    Logger.debug('Combining results in preference resolver', {
+      dateResult: dateResult?.start.toISOString(),
+      dateResultHours: dateResult?.start.getHours(),
+      dateResultUTCHours: dateResult?.start.getUTCHours(),
+      timeResult: timeResult?.start.toISOString(),
+      timeResultHours: timeResult?.start.getHours(),
+      timeResultUTCHours: timeResult?.start.getUTCHours(),
+      timeZone: this.context.timeZone,
+      referenceDate: this.context.referenceDate.toISOString()
+    });
+
     if (dateResult && timeResult) {
       const combinedDate = new Date(dateResult.start);
-      combinedDate.setUTCHours(
-        timeResult.start.getUTCHours(),
-        timeResult.start.getUTCMinutes(),
-        timeResult.start.getUTCSeconds()
+      
+      Logger.debug('Combined date initial state', {
+        combinedDate: combinedDate.toISOString(),
+        hours: combinedDate.getHours(),
+        utcHours: combinedDate.getUTCHours(),
+        localString: combinedDate.toString()
+      });
+
+      combinedDate.setHours(
+        timeResult.start.getHours(),
+        timeResult.start.getMinutes(),
+        timeResult.start.getSeconds()
       );
 
-      // Apply timezone if specified
+      Logger.debug('Combined date after setting hours', {
+        combinedDate: combinedDate.toISOString(),
+        hours: combinedDate.getHours(),
+        utcHours: combinedDate.getUTCHours(),
+        localString: combinedDate.toString(),
+        timeResultHours: timeResult.start.getHours(),
+        timeResultMinutes: timeResult.start.getMinutes()
+      });
+
+      // Convert from local time to UTC if timezone specified
       const finalDate = this.context.timeZone 
-        ? convertToTimeZone(combinedDate, this.context.timeZone)
+        ? convertFromTimeZone(combinedDate, this.context.timeZone)
         : combinedDate;
+
+      Logger.debug('Combined date after timezone conversion', {
+        finalDate: finalDate.toISOString(),
+        hours: finalDate.getHours(),
+        utcHours: finalDate.getUTCHours(),
+        localString: finalDate.toString(),
+        timeZone: this.context.timeZone
+      });
 
       return {
         type: 'single',
@@ -66,16 +102,16 @@ export class PreferenceResolver {
       adjustedResult.start = adjusted;
     }
 
-    // Apply timezone if specified
+    // Convert from local time to UTC if timezone specified
     if (this.context.timeZone) {
       Logger.debug('Applying timezone preference', {
         timeZone: this.context.timeZone,
         before: adjustedResult.start.toISOString()
       });
 
-      adjustedResult.start = convertToTimeZone(adjustedResult.start, this.context.timeZone);
+      adjustedResult.start = convertFromTimeZone(adjustedResult.start, this.context.timeZone);
       if (adjustedResult.end) {
-        adjustedResult.end = convertToTimeZone(adjustedResult.end, this.context.timeZone);
+        adjustedResult.end = convertFromTimeZone(adjustedResult.end, this.context.timeZone);
       }
 
       Logger.debug('Applied timezone preference', {

@@ -83,7 +83,8 @@ export class ParserEngine {
       const dateResult = this.parse(datePart, mergedPrefs);
       if (!dateResult) return null;
 
-      const timeResult = this.parse(`at ${timePart}`, mergedPrefs);
+      // Parse time part without 'at' prefix
+      const timeResult = this.parse(timePart, mergedPrefs);
       if (!timeResult) return null;
 
       // Combine the results

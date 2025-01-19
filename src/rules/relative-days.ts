@@ -1,6 +1,11 @@
 import { RuleModule, IntermediateParse, ParseResult, DateParsePreferences } from '../types/types';
 import { Logger } from '../utils/Logger';
 
+const WEEKDAYS = {
+  sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
+  sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6
+};
+
 export const relativeDaysRule: RuleModule = {
   name: 'relative-days',
   patterns: [
@@ -81,13 +86,49 @@ export const relativeDaysRule: RuleModule = {
           captures: { offset: `-${days}` }
         };
       }
+    },
+    {
+      name: 'next-weekday',
+      regex: /^next\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat)$/i,
+      parse: (matches: RegExpMatchArray): IntermediateParse => {
+        const weekday = matches[1].toLowerCase();
+        const targetDay = WEEKDAYS[weekday as keyof typeof WEEKDAYS];
+        return {
+          type: 'relative',
+          tokens: [matches[0]],
+          pattern: 'next-weekday',
+          captures: { weekday: targetDay.toString() }
+        };
+      }
     }
   ],
   interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult => {
     const referenceDate = prefs.referenceDate || new Date();
-    const offset = parseInt(intermediate.captures.offset);
     
-    // Create date in UTC to match reference date
+    if (intermediate.pattern === 'next-weekday') {
+      const targetDay = parseInt(intermediate.captures.weekday);
+      const currentDay = referenceDate.getUTCDay();
+      
+      // Calculate days until next occurrence
+      let daysToAdd = targetDay - currentDay;
+      if (daysToAdd <= 0) daysToAdd += 7;  // If target day has passed this week, go to next week
+      
+      const date = new Date(Date.UTC(
+        referenceDate.getUTCFullYear(),
+        referenceDate.getUTCMonth(),
+        referenceDate.getUTCDate() + daysToAdd
+      ));
+
+      return {
+        type: 'single',
+        start: date,
+        confidence: 1.0,
+        text: intermediate.tokens[0]
+      };
+    }
+
+    // Handle other patterns
+    const offset = parseInt(intermediate.captures.offset);
     const date = new Date(Date.UTC(
       referenceDate.getUTCFullYear(),
       referenceDate.getUTCMonth(),
