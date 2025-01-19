@@ -67,6 +67,20 @@ export const relativeDaysRule: RuleModule = {
           captures: { offset: days }
         };
       }
+    },
+    {
+      name: 'days-ago',
+      regex: /^(\d+) days ago$/i,
+      parse: (matches: RegExpMatchArray): IntermediateParse => {
+        const [, days] = matches;
+        Logger.debug('Parsing days ago', { days });
+        return {
+          type: 'relative',
+          tokens: [matches[0]],
+          pattern: 'days-ago',
+          captures: { offset: `-${days}` }
+        };
+      }
     }
   ],
   interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult => {

@@ -7,22 +7,31 @@ const MONTHS = {
 };
 
 function getWeekendRange(referenceDate: Date, offset: number): { start: Date, end: Date } {
-  const start = new Date(Date.UTC(
-    referenceDate.getUTCFullYear(),
-    referenceDate.getUTCMonth(),
-    referenceDate.getUTCDate()
-  ));
-  
+  // Find next Saturday
+  const start = new Date(referenceDate);
   const currentDay = start.getUTCDay();
-  const daysToSaturday = (6 - currentDay) % 7;
   
-  // Move to next Saturday
-  start.setUTCDate(start.getUTCDate() + daysToSaturday + (offset * 7));
+  // Calculate days until next Saturday
+  let daysToSaturday = (6 - currentDay) % 7;
+  if (daysToSaturday === 0 && offset > 0) {
+    daysToSaturday = 7; // If today is Saturday and we want next weekend
+  }
+  daysToSaturday += offset * 7;
+  
+  start.setUTCDate(start.getUTCDate() + daysToSaturday);
   start.setUTCHours(0, 0, 0, 0);
-
+  
+  // End is Sunday
   const end = new Date(start);
   end.setUTCDate(end.getUTCDate() + 1);
   end.setUTCHours(23, 59, 59, 999);
+  
+  Logger.debug('Interpreting weekend', {
+    referenceDate: referenceDate.toISOString(),
+    offset,
+    start: start.toISOString(),
+    end: end.toISOString()
+  });
   
   return { start, end };
 }
@@ -46,6 +55,59 @@ function getMultipleWeekendRange(referenceDate: Date, offset: number, count: num
   return { start, end };
 }
 
+function getPeriodRange(referenceDate: Date, part: string, period: string): { start: Date, end: Date } {
+  const start = new Date(referenceDate);
+  const end = new Date(referenceDate);
+  
+  // Reset time components
+  start.setUTCHours(0, 0, 0, 0);
+  end.setUTCHours(23, 59, 59, 999);
+  
+  if (period === 'year') {
+    const year = start.getUTCFullYear();
+    if (part === 'beginning') {
+      start.setUTCMonth(0, 1);
+      end.setUTCMonth(3, 30);
+    } else if (part === 'middle') {
+      start.setUTCMonth(4, 1);
+      end.setUTCMonth(7, 31);
+    } else { // end
+      start.setUTCMonth(8, 1);
+      end.setUTCMonth(11, 31);
+    }
+  } else if (period === 'month') {
+    const year = start.getUTCFullYear();
+    const month = start.getUTCMonth();
+    const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+    const third = Math.floor(lastDay / 3);
+    
+    if (part === 'beginning') {
+      start.setUTCDate(1);
+      end.setUTCDate(third);
+    } else if (part === 'middle') {
+      start.setUTCDate(third + 1);
+      end.setUTCDate(third * 2);
+    } else { // end
+      start.setUTCDate(third * 2 + 1);
+      end.setUTCDate(lastDay);
+    }
+  } else if (period === 'week') {
+    const dayOfWeek = start.getUTCDay();
+    if (part === 'beginning') {
+      start.setUTCDate(start.getUTCDate() - dayOfWeek);
+      end.setUTCDate(end.getUTCDate() - dayOfWeek + 2);
+    } else if (part === 'middle') {
+      start.setUTCDate(start.getUTCDate() - dayOfWeek + 3);
+      end.setUTCDate(end.getUTCDate() - dayOfWeek + 4);
+    } else { // end
+      start.setUTCDate(start.getUTCDate() - dayOfWeek + 5);
+      end.setUTCDate(end.getUTCDate() - dayOfWeek + 6);
+    }
+  }
+  
+  return { start, end };
+}
+
 export const fuzzyRangesRule: RuleModule = {
   name: 'fuzzy-ranges',
   patterns: [
@@ -58,7 +120,7 @@ export const fuzzyRangesRule: RuleModule = {
         tokens: [matches[0]],
         pattern: 'weekend',
         captures: {
-          offset: matches[1].toLowerCase() === 'next' ? '1' : 
+          offset: matches[1].toLowerCase() === 'next' || 
                  matches[1].toLowerCase() === 'the following' ? '1' : '0'
         }
       })
@@ -78,16 +140,16 @@ export const fuzzyRangesRule: RuleModule = {
       })
     },
     {
-      // "next 2 weekends", "following 3 weekends"
-      name: 'multiple-weekends',
-      regex: /^(?:next|following)\s+(\d+)\s+weekends$/i,
+      // "beginning of year", "middle of month", "end of week"
+      name: 'period-part',
+      regex: /^(beginning|middle|end)\s+of\s+(year|month|week)$/i,
       parse: (matches: RegExpMatchArray): IntermediateParse => ({
         type: 'range',
         tokens: [matches[0]],
-        pattern: 'multiple-weekends',
+        pattern: 'period-part',
         captures: {
-          count: matches[1],
-          offset: '1'  // Always start from next weekend
+          part: matches[1].toLowerCase(),
+          period: matches[2].toLowerCase()
         }
       })
     },
@@ -119,22 +181,28 @@ export const fuzzyRangesRule: RuleModule = {
           month: matches[2].toLowerCase()
         }
       })
+    },
+    {
+      // "next 2 weekends", "following 3 weekends"
+      name: 'multiple-weekends',
+      regex: /^(?:next|following)\s+(\d+)\s+weekends$/i,
+      parse: (matches: RegExpMatchArray): IntermediateParse => ({
+        type: 'range',
+        tokens: [matches[0]],
+        pattern: 'multiple-weekends',
+        captures: {
+          count: matches[1],
+          offset: '1'  // Always start from next weekend
+        }
+      })
     }
   ],
   interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult => {
     const referenceDate = prefs.referenceDate || new Date();
     
     if (intermediate.pattern === 'weekend') {
-      const offset = parseInt(intermediate.captures.offset, 10);
+      const offset = parseInt(intermediate.captures.offset);
       const { start, end } = getWeekendRange(referenceDate, offset);
-      
-      Logger.debug('Interpreting weekend', {
-        referenceDate: referenceDate.toISOString(),
-        offset,
-        start: start.toISOString(),
-        end: end.toISOString()
-      });
-
       return {
         type: 'range',
         start,
@@ -144,21 +212,17 @@ export const fuzzyRangesRule: RuleModule = {
       };
     } else if (intermediate.pattern === 'half-month') {
       const { half, month } = intermediate.captures;
-      const year = referenceDate.getUTCFullYear();
       const monthNum = MONTHS[month as keyof typeof MONTHS];
-      const isSecondHalf = half === 'second';
+      const year = referenceDate.getUTCFullYear();
       
-      const { start, end } = getHalfMonthRange(year, monthNum, isSecondHalf);
+      // Get last day of month
+      const lastDay = new Date(Date.UTC(year, monthNum, 0)).getUTCDate();
+      const midPoint = Math.floor(lastDay / 2);
       
-      Logger.debug('Interpreting half month', {
-        half,
-        month,
-        year,
-        monthNum,
-        start: start.toISOString(),
-        end: end.toISOString()
-      });
-
+      const start = new Date(Date.UTC(year, monthNum - 1, half === 'first' ? 1 : midPoint + 1));
+      const end = new Date(Date.UTC(year, monthNum - 1, half === 'first' ? midPoint : lastDay));
+      end.setUTCHours(23, 59, 59, 999);
+      
       return {
         type: 'range',
         start,
@@ -166,12 +230,14 @@ export const fuzzyRangesRule: RuleModule = {
         confidence: 1.0,
         text: intermediate.tokens[0]
       };
-    } else if (intermediate.pattern === 'multiple-weekends') {
-      const offset = parseInt(intermediate.captures.offset, 10);
-      const count = parseInt(intermediate.captures.count, 10);
+    } else if (intermediate.pattern === 'period-part') {
+      const { part, period } = intermediate.captures;
+      const { start, end } = getPeriodRange(referenceDate, part, period);
+      
       return {
         type: 'range',
-        ...getMultipleWeekendRange(referenceDate, offset, count),
+        start,
+        end,
         confidence: 1.0,
         text: intermediate.tokens[0]
       };
@@ -256,8 +322,17 @@ export const fuzzyRangesRule: RuleModule = {
         confidence: 1.0,
         text: intermediate.tokens[0]
       };
+    } else if (intermediate.pattern === 'multiple-weekends') {
+      const offset = parseInt(intermediate.captures.offset);
+      const count = parseInt(intermediate.captures.count);
+      return {
+        type: 'range',
+        ...getMultipleWeekendRange(referenceDate, offset, count),
+        confidence: 1.0,
+        text: intermediate.tokens[0]
+      };
     }
-
-    throw new Error(`Unknown pattern: ${intermediate.pattern}`);  // Default return
+    
+    throw new Error('Unknown pattern');
   }
 }; 
