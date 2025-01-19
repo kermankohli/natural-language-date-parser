@@ -26,7 +26,7 @@ const parser = new NLDP({
 });
 
 const result = parser.parse('next Monday at 3pm');
-console.log(result);``
+console.log(result);```
 
 ## 📖 Supported Expressions
 
@@ -54,6 +54,7 @@ Enable detailed parsing traces:
 ```typescript
 const result = parser.parse('next Monday at 3pm', { debug: true });
 ```
+
 ## 🧪 Testing
 
 ```bash
