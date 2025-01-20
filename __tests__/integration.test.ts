@@ -1,11 +1,11 @@
-import { NLDP } from '../src/nldp';
+import { createNLDP, NLDP } from '../src/nldp';
 
 describe('NLDP Integration Tests', () => {
   let parser: NLDP;
   const referenceDate = new Date('2024-03-14T12:00:00Z'); // Thursday, March 14, 2024
 
   beforeEach(() => {
-    parser = new NLDP({ referenceDate });
+    parser = createNLDP({ referenceDate });
   });
 
   describe('absolute dates', () => {
@@ -137,7 +137,7 @@ describe('NLDP Integration Tests', () => {
   describe('timezone handling', () => {
     it('should respect timezone in preferences', () => {
       // Test with New York timezone (UTC-4 during DST)
-      const nyParser = new NLDP({ 
+      const nyParser = createNLDP({ 
         referenceDate,
         timeZone: 'America/New_York'
       });
@@ -147,7 +147,7 @@ describe('NLDP Integration Tests', () => {
       expect(result?.start.toISOString()).toBe('2024-03-14T19:00:00.000Z');
 
       // Test with Tokyo timezone (UTC+9)
-      const tokyoParser = new NLDP({
+      const tokyoParser = createNLDP({
         referenceDate,
         timeZone: 'Asia/Tokyo'
       });
@@ -158,22 +158,18 @@ describe('NLDP Integration Tests', () => {
     });
 
     it('should handle DST transitions', () => {
-      const nyParser = new NLDP({
+      const nyParser = createNLDP({
         referenceDate: new Date('2024-03-09T12:00:00Z'), // Day before DST
         timeZone: 'America/New_York'
       });
 
-      console.log(nyParser);
-
       // Before DST change
       const before = nyParser.parse('today at 3pm');
-      console.log(before);
-      expect(before?.start).toBe('2024-03-09T20:00:00.000Z');
+      expect(before?.start.toISOString()).toBe('2024-03-09T20:00:00.000Z');
 
       // After DST change
       const after = nyParser.parse('tomorrow at 3pm');
-      console.log(after);
-      expect(after?.start).toBe('2024-03-10T19:00:00.000Z');
+      expect(after?.start.toISOString()).toBe('2024-03-10T19:00:00.000Z');
     });
   });
 }); 

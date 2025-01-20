@@ -1,43 +1,62 @@
 /**
  * Configuration options for date parsing
  */
-export interface DateParsePreferences {
+export type DateParsePreferences = {
   referenceDate?: Date;        // Date to use as "now" for relative dates
   timeZone?: string;           // IANA time zone identifier
   weekStartsOn?: 0 | 1;        // 0 = Sunday, 1 = Monday
+  parser?: {
+    parse: (input: string, prefs: DateParsePreferences) => ParseResult | null;
+  };
   debug?: boolean;             // Enable debug logging
-}
+};
 
 /**
  * Result of a successful date/time parse
  */
-export interface ParseResult {
-  type: 'single' | 'range' | 'time';
+export type ParseResult = SingleDateResult | DateRangeResult;
+
+export interface SingleDateResult {
+  type: 'single';
   start: Date;
   end?: Date;                  // Only present when type === 'range'
   text: string;               // Original input text
   confidence: number;         // 0-1 indicating parse confidence
 }
 
+export interface DateRangeResult {
+  type: 'range';
+  start: Date;
+  end: Date;
+  text: string;
+  confidence: number;
+}
+
 /**
  * Intermediate parse result before final interpretation
  */
 export interface IntermediateParse {
-  type: 'absolute' | 'relative' | 'range' | 'time' | 'ordinal';
-  tokens: string[];           // Matched tokens
-  pattern: string;            // Name of matched pattern
-  captures: Record<string, string>; // Named captures from pattern match
+  type: 'single' | 'range' | 'absolute' | 'relative' | 'time' | 'ordinal' | 'datetime';
+  start?: Date;
+  end?: Date;
+  text?: string;
+  confidence?: number;
+  pattern?: string;
+  captures?: { [key: string]: string };
+  tokens?: string[];
 }
 
 /**
  * A module containing rules for parsing dates
  */
+export interface RulePattern {
+  name: string;
+  regex: RegExp;
+  parse: (matches: RegExpMatchArray, prefs: DateParsePreferences) => IntermediateParse | null;
+}
+
 export interface RuleModule {
   name: string;
-  patterns: Array<{
-    name: string;
-    regex: RegExp;
-    parse: (matches: RegExpMatchArray, prefs: DateParsePreferences) => IntermediateParse | null;
-  }>;
-  interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences) => ParseResult | null;
+  patterns: RulePattern[];
+  interpret?: (intermediate: IntermediateParse, prefs: DateParsePreferences) => ParseResult | null;
 } 

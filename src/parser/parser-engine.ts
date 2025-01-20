@@ -1,114 +1,119 @@
 import { DateParsePreferences, ParseResult, RuleModule, IntermediateParse } from '../types/types';
 import { tokenize, TokenizerOptions } from '../tokenizer/tokenizer';
-import { DebugTrace } from '../utils/debug-trace';
+import { debugTrace } from '../utils/debug-trace';
 import { Logger } from '../utils/Logger';
-import { PreferenceResolver } from '../resolver/preference-resolver';
+import { resolvePreferences } from '../resolver/preference-resolver';
 
-export class ParserEngine {
-  private rules: RuleModule[] = [];
-  private tokenizerOptions: TokenizerOptions = {};
-  private defaultPreferences: DateParsePreferences = {};
-  private resolver: PreferenceResolver;
+export type ParserState = {
+  rules: RuleModule[];
+  tokenizerOptions: TokenizerOptions;
+  defaultPreferences: DateParsePreferences;
+};
 
-  constructor(preferences: DateParsePreferences = {}) {
-    this.defaultPreferences = preferences;
-    this.resolver = new PreferenceResolver(preferences);
+export const createParserState = (preferences: DateParsePreferences = {}): ParserState => ({
+  rules: [],
+  tokenizerOptions: {},
+  defaultPreferences: preferences,
+});
+
+export const registerRule = (state: ParserState, rule: RuleModule): ParserState => ({
+  ...state,
+  rules: [...state.rules, rule]
+});
+
+const intermediateToResult = (intermediate: IntermediateParse, rule: RuleModule, prefs: DateParsePreferences): ParseResult | null => {
+  // If the rule has an interpret function, use it
+  if (rule.interpret) {
+    return rule.interpret(intermediate, prefs);
   }
 
-  /**
-   * Register a new rule module
-   */
-  registerRule(rule: RuleModule): void {
-    this.rules.push(rule);
-  }
-
-  /**
-   * Parse a date/time string
-   */
-  parse(input: string, preferences: DateParsePreferences = {}): ParseResult | null {
-    const mergedPrefs = { ...this.defaultPreferences, ...preferences };
-    this.resolver = new PreferenceResolver(mergedPrefs);
-    
-    // Regular parsing flow
-    const tokens = tokenize(input, this.tokenizerOptions);
-
-    console.log(tokens);
-
-    if (mergedPrefs.debug) {
-      DebugTrace.startTrace(input);
-      DebugTrace.addRuleMatch({
-        ruleName: 'tokenizer',
-        input,
-        matched: true,
-        tokens
-      });
+  // Otherwise, convert directly if we have the required fields
+  if (intermediate.start && intermediate.text && intermediate.confidence) {
+    if (intermediate.type === 'range' && intermediate.end) {
+      return {
+        type: 'range',
+        start: intermediate.start,
+        end: intermediate.end,
+        text: intermediate.text,
+        confidence: intermediate.confidence
+      };
     }
+    return {
+      type: 'single',
+      start: intermediate.start,
+      end: intermediate.end,
+      text: intermediate.text,
+      confidence: intermediate.confidence
+    };
+  }
 
-    // Try each rule module
-    for (const rule of this.rules) {
-      // Try each pattern in the rule
-      for (const pattern of rule.patterns) {
-        const joinedTokens = tokens.join(' ');
-        const matches = joinedTokens.match(pattern.regex);
+  return null;
+};
 
+export const parse = (
+  state: ParserState,
+  input: string,
+  preferences: DateParsePreferences = {}
+): ParseResult | null => {
+  const mergedPrefs = { ...state.defaultPreferences, ...preferences };
+  
+  // Regular parsing flow
+  const tokens = tokenize(input, state.tokenizerOptions);
+
+  if (mergedPrefs.debug) {
+    debugTrace.startTrace(input);
+    debugTrace.addRuleMatch({
+      ruleName: 'tokenizer',
+      input,
+      matched: true
+    });
+  }
+
+  // Try each rule module
+  for (const rule of state.rules) {
+    // Try each pattern in the rule
+    for (const pattern of rule.patterns) {
+      const joinedTokens = tokens.join(' ');
+      const matches = joinedTokens.match(pattern.regex);
+
+      if (matches) {
         if (mergedPrefs.debug) {
-          DebugTrace.addRuleMatch({
-            ruleName: `${rule.name}/${pattern.name}`,
+          debugTrace.addRuleMatch({
+            ruleName: rule.name,
             input: joinedTokens,
-            matched: !!matches,
-            matchedGroups: matches ? Array.from(matches) : undefined
+            matched: true
           });
         }
 
-        if (matches) {
-          // Get intermediate parse result
+        try {
           const intermediate = pattern.parse(matches, mergedPrefs);
           if (!intermediate) continue;
 
-          // Convert to final result
-          const result = rule.interpret(intermediate, mergedPrefs);
+          const result = intermediateToResult(intermediate, rule, mergedPrefs);
           if (result) {
-            if (mergedPrefs.debug) {
-              DebugTrace.setFinalResult(result);
+            const finalResult = resolvePreferences(result, mergedPrefs);
+            if (finalResult) {
+              Logger.debug(`Matched rule: ${rule.name}`);
+              return finalResult;
             }
-            return this.resolver.resolve([{
-              ...result,
-              text: input
-            }]);
           }
+        } catch (err) {
+          Logger.error(`Error in rule ${rule.name}:`, { error: err });
+          continue;
         }
+      } else if (mergedPrefs.debug) {
+        debugTrace.addRuleMatch({
+          ruleName: rule.name,
+          input: joinedTokens,
+          matched: false
+        });
       }
     }
-
-    // If no direct match found, check if this is a combined date + time expression
-    const combinedMatch = input.match(/^(.+)\s+at\s+(.+)$/i);
-    console.log(combinedMatch);
-    if (combinedMatch) {
-      const [, datePart, timePart] = combinedMatch;
-      console.log(datePart, timePart);
-      
-      // Parse date and time parts separately
-      const dateResult = this.parse(datePart, mergedPrefs);
-      console.log(`1`);
-      if (!dateResult) return null;
-      
-
-      // Parse time part without 'at' prefix
-      const timeResult = this.parse(timePart, mergedPrefs);
-      console.log(`2`);
-      if (!timeResult) return null;
-      
-
-      // Let the resolver combine the results
-      console.log(`3`);
-      console.log(dateResult, timeResult);
-      return this.resolver.resolve([dateResult, timeResult]);
-    }
-
-    if (mergedPrefs.debug) {
-      DebugTrace.setFinalResult(null);
-    }
-
-    return null;
   }
+
+  if (mergedPrefs.debug) {
+    debugTrace.endTrace();
+  }
+
+  return null;
 } 

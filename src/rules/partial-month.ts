@@ -34,8 +34,9 @@ export const partialMonthRule: RuleModule = {
       })
     }
   ],
-  interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult => {
-    const { part, month } = intermediate.captures;
+  interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult | null => {
+    const { part, month } = intermediate.captures || {};
+    if (!part || !month) return null;
     const referenceDate = prefs.referenceDate || new Date();
     const year = referenceDate.getUTCFullYear();
     const monthNum = MONTHS[month as keyof typeof MONTHS];
@@ -59,7 +60,7 @@ export const partialMonthRule: RuleModule = {
       start,
       end,
       confidence: 1.0,
-      text: intermediate.tokens[0]
+      text: intermediate.tokens?.[0] || intermediate.text || ''
     };
   }
 }; 

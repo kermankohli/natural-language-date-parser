@@ -2,10 +2,24 @@ import { parseISO } from 'date-fns';
 import { RuleModule, IntermediateParse, ParseResult, DateParsePreferences } from '../types/types';
 import { Logger } from '../utils/Logger';
 import { parseTimeString } from '../utils/time-parser';
+import { DateTime } from 'luxon';
 
 export const dateTimeRule: RuleModule = {
   name: 'datetime',
   patterns: [
+    {
+      name: 'date-at-time',
+      regex: /^(.+?)\s+at\s+(.+)$/i,
+      parse: (matches: RegExpMatchArray): IntermediateParse => ({
+        type: 'datetime',
+        tokens: [matches[0]],
+        pattern: 'date-at-time',
+        captures: {
+          datePart: matches[1],
+          timePart: matches[2]
+        }
+      })
+    },
     {
       name: 'iso-datetime',
       regex: /^(\d{4}-\d{2}-\d{2})[T ](\d{1,2}(?::(\d{2})){1,2}(?:[+-]\d{2}:?\d{2}|Z)?)$/i,
@@ -102,56 +116,47 @@ export const dateTimeRule: RuleModule = {
     }
   ],
   interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult | null => {
-    // Handle both ISO and 12-hour formats
-    if ('parsedDate' in intermediate.captures) {
-      return {
-        type: 'single',
-        start: parseISO(intermediate.captures.parsedDate),
-        confidence: 1.0,
-        text: intermediate.tokens[0]
-      };
-    } else if (intermediate.pattern === 'simple-time') {
-      const { special, hours, minutes, meridiem } = intermediate.captures;
-      let finalHours = special 
-        ? (special === 'noon' ? 12 : 0)  // noon = 12, midnight = 0
-        : parseInt(hours);
-      
-      // Convert 12-hour to 24-hour
-      if (meridiem === 'pm' && finalHours < 12) finalHours += 12;
-      if (meridiem === 'am' && finalHours === 12) finalHours = 0;
+    const { datePart, timePart } = intermediate.captures || {};
+    if (!datePart || !timePart || !prefs.parser) return null;
 
-      const date = new Date();
-      date.setUTCHours(finalHours, parseInt(minutes || '0'), 0, 0);
+    // Parse date and time separately
+    const dateResult = prefs.parser.parse(datePart, prefs);
+    if (!dateResult?.start) return null;
 
-      return {
-        type: 'single',
-        start: date,
-        confidence: 1.0,
-        text: intermediate.tokens[0]
-      };
+    // Handle special times
+    const timeStr = timePart.toLowerCase();
+    let hours = 0, minutes = 0;
+    
+    if (timeStr === 'noon') {
+      hours = 12;
+    } else if (timeStr === 'midnight') {
+      hours = 0;
     } else {
-      // Handle absolute dates with time
-      const { year, month, day, hours, minutes, seconds, offsetMinutes } = intermediate.captures;
-      const date = new Date(Date.UTC(
-        parseInt(year),
-        parseInt(month) - 1,
-        parseInt(day),
-        parseInt(hours),
-        parseInt(minutes),
-        parseInt(seconds || '0')
-      ));
-
-      // Apply timezone offset if present
-      if (offsetMinutes) {
-        date.setMinutes(date.getMinutes() - parseInt(offsetMinutes));
-      }
-
-      return {
-        type: 'single',
-        start: date,
-        confidence: 1.0,
-        text: intermediate.tokens[0]
-      };
+      const time = parseTimeString(timeStr, { allow12Hour: true });
+      if (!time) return null;
+      hours = time.hours;
+      minutes = time.minutes;
     }
+
+    // Create a DateTime in the target timezone
+    const dt = DateTime.fromJSDate(dateResult.start)
+      .setZone(prefs.timeZone || 'UTC')
+      .set({ hour: hours, minute: minutes, second: 0 });  // Set time in target timezone
+
+    // Convert to UTC for storage
+    const utc = dt.toUTC();
+
+    Logger.debug('Converted date to timezone', {
+      original: dt.toJSDate().toISOString(),
+      timeZone: prefs.timeZone || 'UTC',
+      result: utc.toJSDate().toISOString()
+    });
+
+    return {
+      type: 'single',
+      start: utc.toJSDate(),
+      confidence: 1.0,
+      text: intermediate.tokens?.[0] || ''
+    };
   }
 }; 

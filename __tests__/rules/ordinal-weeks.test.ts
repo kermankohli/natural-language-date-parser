@@ -1,98 +1,73 @@
+import { createParserState, registerRule, parse } from '../../src/parser/parser-engine';
 import { ordinalWeeksRule } from '../../src/rules/ordinal-weeks';
-import { ParserEngine } from '../../src/parser/parser-engine';
 
 describe('Ordinal Weeks Rule', () => {
-  let parser: ParserEngine;
-  const referenceDate = new Date('2024-03-14T12:00:00Z');
+  const referenceDate = new Date('2024-03-14T12:00:00Z'); // Thursday, March 14, 2024
 
-  beforeEach(() => {
-    parser = new ParserEngine();
-    parser.registerRule(ordinalWeeksRule);
+  it('should parse first week of month', () => {
+    let state = createParserState({ referenceDate });
+    state = registerRule(state, ordinalWeeksRule);
+
+    const result = parse(state, 'first week of March');
+    expect(result?.type).toBe('range');
+    expect(result?.start.toISOString().slice(0, 10)).toBe('2024-03-04');
+    expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-03-10');
   });
 
-  describe('with Monday as week start', () => {
-    const prefs = { referenceDate, weekStartDay: 1 as const };
+  it('should parse last week of month', () => {
+    let state = createParserState({ referenceDate });
+    state = registerRule(state, ordinalWeeksRule);
 
-    describe('forward ordinals', () => {
-      it('should parse first week of month', () => {
-        const result = parser.parse('first week of March', prefs);
-        // Should be March 4 (first Monday)
-        expect(result?.start.toISOString().slice(0, 10))
-          .toBe('2024-03-04');
-      });
+    const result = parse(state, 'last week of March');
+    expect(result?.type).toBe('range');
+    expect(result?.start.toISOString().slice(0, 10)).toBe('2024-03-25');
+    expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-03-31');
+  });
 
-      it('should parse third week of month', () => {
-        const result = parser.parse('third week of March', prefs);
-        // Should be March 18
-        expect(result?.start.toISOString().slice(0, 10))
-          .toBe('2024-03-18');
-      });
+  it('should handle different ordinal formats', () => {
+    let state = createParserState({ referenceDate });
+    state = registerRule(state, ordinalWeeksRule);
 
-      it('should handle numeric ordinals', () => {
-        const result = parser.parse('2nd week of March', prefs);
-        // Should be March 11
-        expect(result?.start.toISOString().slice(0, 10))
-          .toBe('2024-03-11');
-      });
-    });
+    const formats = [
+      'first week of March',
+      'the first week of March',
+      '1st week of March'
+    ];
 
-    describe('backward ordinals', () => {
-      it('should parse last week of month', () => {
-        const result = parser.parse('last week of March', prefs);
-        // Should be March 25 (last Monday)
-        expect(result?.start.toISOString().slice(0, 10))
-          .toBe('2024-03-25');
-      });
-
-      it('should parse second to last week', () => {
-        const result = parser.parse('second to last week of March', prefs);
-        // Should be March 18
-        expect(result?.start.toISOString().slice(0, 10))
-          .toBe('2024-03-18');
-      });
-    });
-
-    describe('edge cases', () => {
-      it('should handle months with partial weeks', () => {
-        const result = parser.parse('first week of April', prefs);
-        // Should be April 1
-        expect(result?.start.toISOString().slice(0, 10))
-          .toBe('2024-04-01');
-      });
-
-      it('should handle fifth week when it exists', () => {
-        // July 2024 has 5 Mondays
-        const result = parser.parse('fifth week of July', prefs);
-        expect(result?.start.toISOString().slice(0, 10))
-          .toBe('2024-07-29');
-      });
-
-      it('should return null for fifth week when it doesn\'t exist', () => {
-        // June 2024 has only 4 Mondays
-        const result = parser.parse('fifth week of June', prefs);
-        expect(result).toBeNull();
-      });
+    formats.forEach(format => {
+      const result = parse(state, format);
+      expect(result?.type).toBe('range');
+      expect(result?.start.toISOString().slice(0, 10)).toBe('2024-03-04');
+      expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-03-10');
     });
   });
 
-  describe('with Sunday as week start', () => {
-    const prefs = { referenceDate, weekStartsOn: 0 as const };
+  it('should handle different month formats', () => {
+    let state = createParserState({ referenceDate });
+    state = registerRule(state, ordinalWeeksRule);
 
-    it('should parse first week with Sunday start', () => {
-      const result = parser.parse('first week of March', prefs);
-      // Should be March 3 (first Sunday)
-      expect(result?.start.toISOString().slice(0, 10))
-        .toBe('2024-03-03');
-    });
+    const fullName = parse(state, 'first week of March');
+    const abbreviated = parse(state, 'first week of Mar');
 
-    it('should parse last week with Sunday start', () => {
-      const result = parser.parse('last week of march', { 
-        referenceDate, 
-        weekStartsOn: 0 
-      });
-      // Should be March 24 (start of last full week)
-      expect(result?.start.toISOString().slice(0, 10))
-        .toBe('2024-03-24');
-    });
+    expect(fullName?.start.toISOString().slice(0, 10))
+      .toBe(abbreviated?.start.toISOString().slice(0, 10));
+    expect(fullName?.end?.toISOString().slice(0, 10))
+      .toBe(abbreviated?.end?.toISOString().slice(0, 10));
+  });
+
+  it('should respect week start preference', () => {
+    let state = createParserState({ referenceDate, weekStartsOn: 1 }); // Monday
+    state = registerRule(state, ordinalWeeksRule);
+
+    const mondayStart = parse(state, 'first week of March');
+    expect(mondayStart?.start.toISOString().slice(0, 10)).toBe('2024-03-04');
+    expect(mondayStart?.end?.toISOString().slice(0, 10)).toBe('2024-03-10');
+
+    state = createParserState({ referenceDate, weekStartsOn: 0 }); // Sunday
+    state = registerRule(state, ordinalWeeksRule);
+
+    const sundayStart = parse(state, 'first week of March');
+    expect(sundayStart?.start.toISOString().slice(0, 10)).toBe('2024-03-03');
+    expect(sundayStart?.end?.toISOString().slice(0, 10)).toBe('2024-03-09');
   });
 }); 

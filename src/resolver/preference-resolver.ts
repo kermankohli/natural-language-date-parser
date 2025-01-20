@@ -9,110 +9,78 @@ interface ResolverContext {
   timeZone?: string;
 }
 
-export class PreferenceResolver {
-  private context: ResolverContext;
+const createContext = (preferences: DateParsePreferences): ResolverContext => ({
+  referenceDate: preferences.referenceDate || new Date(),
+  weekStartsOn: preferences.weekStartsOn || 0,
+  timeZone: preferences.timeZone
+});
 
-  constructor(preferences: DateParsePreferences) {
-    this.context = {
-      referenceDate: preferences.referenceDate || new Date(),
-      weekStartsOn: preferences.weekStartsOn || 0,
-      timeZone: preferences.timeZone
+const combineResults = (context: ResolverContext, results: ParseResult[]): ParseResult => {
+  const timeResult = results.find(r => r.type === 'single' && r.text.match(/^(?:at\s+)?\d{1,2}(?:\s*:\s*\d{2})?(?:\s*[ap]m)?$/i));
+  const dateResult = results.find(r => r !== timeResult && r.type === 'single');
+
+  Logger.debug('Combining results in preference resolver', {
+    dateResult: dateResult?.start.toISOString(),
+    dateResultHours: dateResult?.start.getHours(),
+    dateResultUTCHours: dateResult?.start.getUTCHours(),
+    timeResult: timeResult?.start.toISOString(),
+    timeResultHours: timeResult?.start.getHours(),
+    timeResultUTCHours: timeResult?.start.getUTCHours(),
+    timeZone: context.timeZone,
+    referenceDate: context.referenceDate.toISOString()
+  });
+
+  if (dateResult && timeResult) {
+    // Create a DateTime in the target timezone using the date components
+    const dt = DateTime.fromJSDate(dateResult.start, { zone: context.timeZone || 'UTC' })
+      .set({
+        hour: timeResult.start.getUTCHours(),
+        minute: timeResult.start.getUTCMinutes(),
+        second: timeResult.start.getUTCSeconds(),
+        millisecond: timeResult.start.getUTCMilliseconds()
+      });
+
+    return {
+      type: 'single',
+      start: dt.toUTC().toJSDate(),
+      text: `${dateResult.text} at ${timeResult.text}`,
+      confidence: Math.min(dateResult.confidence, timeResult.confidence)
     };
-
-    console.log(this.context);
   }
 
-  resolve(results: ParseResult[]): ParseResult {
-    // If we have multiple results (e.g., date + time)
-    if (results.length > 1) {
-      return this.combineResults(results);
-    }
-    
-    return this.applyPreferences(results[0]);
-  }
+  return results[0];
+};
 
-  private combineResults(results: ParseResult[]): ParseResult {
-    const timeResult = results.find(r => r.type === 'single' && r.text.match(/^(?:at\s+)?\d{1,2}(?:\s*:\s*\d{2})?(?:\s*[ap]m)?$/i));
-    const dateResult = results.find(r => r !== timeResult && r.type === 'single');
+const applyPreferences = (context: ResolverContext, result: ParseResult): ParseResult => {
+  if (!result) return result;
 
-    Logger.debug('Combining results in preference resolver', {
-      dateResult: dateResult?.start.toISOString(),
-      dateResultHours: dateResult?.start.getHours(),
-      dateResultUTCHours: dateResult?.start.getUTCHours(),
-      timeResult: timeResult?.start.toISOString(),
-      timeResultHours: timeResult?.start.getHours(),
-      timeResultUTCHours: timeResult?.start.getUTCHours(),
-      timeZone: this.context.timeZone,
-      referenceDate: this.context.referenceDate.toISOString()
-    });
-
-    if (dateResult && timeResult) {
-      Logger.debug('Time components before combining', {
-        timeResultHours: timeResult.start.getUTCHours(),
-        timeResultMinutes: timeResult.start.getUTCMinutes(),
-        timeResultSeconds: timeResult.start.getUTCSeconds()
-      });
-
-      // First get the UTC components from both results
-      const dateUTC = dateResult.start;
-      const timeUTC = timeResult.start;
-
-      // Create a new date with the date components from dateUTC and time components from timeUTC
-      const combinedDate = new Date(Date.UTC(
-        dateUTC.getUTCFullYear(),
-        dateUTC.getUTCMonth(),
-        dateUTC.getUTCDate(),
-        timeUTC.getUTCHours(),
-        timeUTC.getUTCMinutes(),
-        timeUTC.getUTCSeconds()
-      ));
-
-      Logger.debug('Combined date details', {
-        dateUTC: dateUTC.toISOString(),
-        timeUTC: timeUTC.toISOString(),
-        combinedDateISO: combinedDate.toISOString(),
-        combinedDateLocal: combinedDate.toLocaleString('en-US', { timeZone: this.context.timeZone }),
-        timeZone: this.context.timeZone
-      });
-
-      return {
-        type: 'single',
-        start: combinedDate,
-        confidence: Math.min(dateResult.confidence, timeResult.confidence),
-        text: `${dateResult.text} ${timeResult.text}`
-      };
-    }
-
-    return this.applyPreferences(results[0]);
-  }
-
-  private applyPreferences(result: ParseResult): ParseResult {
-    let adjustedResult = { ...result };
-
-    // Handle week start preference
-    if (this.context.weekStartsOn === 0 && result.text === 'start of week') {
-      const adjusted = new Date(result.start);
-      adjusted.setUTCDate(adjusted.getUTCDate() - 1); // Move back one day for Sunday start
-      adjustedResult.start = adjusted;
-    }
-
-    // Convert from local time to UTC if timezone specified
-    if (this.context.timeZone) {
-      Logger.debug('Applying timezone preference', {
-        timeZone: this.context.timeZone,
-        before: adjustedResult.start.toISOString()
-      });
-
-      adjustedResult.start = convertFromTimeZone(adjustedResult.start, this.context.timeZone);
-      if (adjustedResult.end) {
-        adjustedResult.end = convertFromTimeZone(adjustedResult.end, this.context.timeZone);
+  // Handle timezone conversions if needed
+  if (context.timeZone) {
+    if (result.type === 'single') {
+      result.start = convertToTimeZone(result.start, context.timeZone);
+      if (result.end) {
+        result.end = convertToTimeZone(result.end, context.timeZone);
       }
-
-      Logger.debug('Applied timezone preference', {
-        after: adjustedResult.start.toISOString()
-      });
+    } else if (result.type === 'range' && result.end) {
+      result.start = convertToTimeZone(result.start, context.timeZone);
+      result.end = convertToTimeZone(result.end, context.timeZone);
     }
-
-    return adjustedResult;
   }
-} 
+
+  return result;
+};
+
+export const resolvePreferences = (results: ParseResult | ParseResult[], preferences: DateParsePreferences): ParseResult => {
+  const context = createContext(preferences);
+  
+  if (!Array.isArray(results)) {
+    return applyPreferences(context, results);
+  }
+
+  // If we have multiple results (e.g., date + time)
+  if (results.length > 1) {
+    return combineResults(context, results);
+  }
+  
+  return applyPreferences(context, results[0]);
+}; 

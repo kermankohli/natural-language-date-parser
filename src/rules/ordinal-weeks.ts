@@ -171,6 +171,9 @@ export const ordinalWeeksRule: RuleModule = {
     }
   ],
   interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult | null => {
+    const { ordinal, month } = intermediate.captures || {};
+    if (!ordinal || !month) return null;
+    
     const weekStartsOn = prefs.weekStartsOn ?? 1;
     
     Logger.debug('Preference details', {
@@ -180,11 +183,7 @@ export const ordinalWeeksRule: RuleModule = {
       defaulted: !prefs.weekStartsOn
     });
 
-    const { ordinal, month } = intermediate.captures;
-    
-    // Get year from reference date or current year
-    const referenceDate = prefs.referenceDate || new Date();
-    const year = referenceDate.getUTCFullYear();
+    const year = prefs.referenceDate?.getUTCFullYear() || new Date().getUTCFullYear();
     const monthNum = MONTHS[month as keyof typeof MONTHS];
     
     Logger.debug('Interpreting ordinal week', {
@@ -217,7 +216,7 @@ export const ordinalWeeksRule: RuleModule = {
       start: rangeStart,
       end,
       confidence: 1.0,
-      text: intermediate.tokens[0]
+      text: intermediate.tokens?.[0] || intermediate.text || ''
     };
   }
 }; 

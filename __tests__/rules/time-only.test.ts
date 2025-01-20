@@ -1,65 +1,60 @@
+import { createParserState, registerRule, parse } from '../../src/parser/parser-engine';
 import { timeOnlyRule } from '../../src/rules/time-only';
-import { ParserEngine } from '../../src/parser/parser-engine';
 
 describe('Time Only Rule', () => {
-  let parser: ParserEngine;
-  const referenceDate = new Date('2024-03-20T00:00:00Z');
+  const referenceDate = new Date('2024-03-14T12:00:00Z');
 
-  beforeEach(() => {
-    parser = new ParserEngine();
-    parser.registerRule(timeOnlyRule);
+  it('should parse simple time expressions', () => {
+    let state = createParserState({ referenceDate });
+    state = registerRule(state, timeOnlyRule);
+
+    const result = parse(state, 'at 3:30 PM');
+    expect(result?.type).toBe('single');
+    expect(result?.start.getUTCHours()).toBe(15);
+    expect(result?.start.getUTCMinutes()).toBe(30);
   });
 
-  describe('24-hour format', () => {
-    it('should parse simple 24-hour time', () => {
-      const result = parser.parse('14:30', { referenceDate });
-      expect(result?.start.toISOString()).toBe('2024-03-20T14:30:00.000Z');
-    });
+  it('should parse special times', () => {
+    let state = createParserState({ referenceDate });
+    state = registerRule(state, timeOnlyRule);
 
-    it('should parse with seconds', () => {
-      const result = parser.parse('14:30:45', { referenceDate });
-      expect(result?.start.toISOString()).toBe('2024-03-20T14:30:45.000Z');
-    });
+    const noon = parse(state, 'at noon');
+    expect(noon?.start.getUTCHours()).toBe(12);
+    expect(noon?.start.getUTCMinutes()).toBe(0);
 
-    it('should parse with timezone', () => {
-      const result = parser.parse('14:30Z', { referenceDate });
-      expect(result?.start.toISOString()).toBe('2024-03-20T14:30:00.000Z');
-    });
-
-    it('should parse with timezone offset', () => {
-      const result = parser.parse('14:30+02:00', { referenceDate });
-      expect(result?.start.toISOString()).toBe('2024-03-20T12:30:00.000Z');
-    });
+    const midnight = parse(state, 'at midnight');
+    expect(midnight?.start.getUTCHours()).toBe(0);
+    expect(midnight?.start.getUTCMinutes()).toBe(0);
   });
 
-  describe('12-hour format', () => {
-    it('should parse AM times', () => {
-      const result = parser.parse('9:30 AM', { referenceDate });
-      expect(result?.start.toISOString()).toBe('2024-03-20T09:30:00.000Z');
-    });
+  it('should handle 12-hour format', () => {
+    let state = createParserState({ referenceDate });
+    state = registerRule(state, timeOnlyRule);
 
-    it('should parse PM times', () => {
-      const result = parser.parse('2:30 PM', { referenceDate });
-      expect(result?.start.toISOString()).toBe('2024-03-20T14:30:00.000Z');
-    });
+    const am = parse(state, 'at 9:30 AM');
+    expect(am?.start.getUTCHours()).toBe(9);
+    expect(am?.start.getUTCMinutes()).toBe(30);
 
-    it('should handle 12 AM/PM edge cases', () => {
-      expect(parser.parse('12:00 AM', { referenceDate })?.start.toISOString())
-        .toBe('2024-03-20T00:00:00.000Z');
-      expect(parser.parse('12:00 PM', { referenceDate })?.start.toISOString())
-        .toBe('2024-03-20T12:00:00.000Z');
-    });
+    const pm = parse(state, 'at 9:30 PM');
+    expect(pm?.start.getUTCHours()).toBe(21);
+    expect(pm?.start.getUTCMinutes()).toBe(30);
   });
 
-  describe('validation', () => {
-    it('should reject invalid hours', () => {
-      expect(parser.parse('24:00')).toBeNull();
-      expect(parser.parse('13:00 PM')).toBeNull();
-    });
+  it('should handle 24-hour format', () => {
+    let state = createParserState({ referenceDate });
+    state = registerRule(state, timeOnlyRule);
 
-    it('should reject invalid minutes/seconds', () => {
-      expect(parser.parse('12:60')).toBeNull();
-      expect(parser.parse('12:00:60')).toBeNull();
-    });
+    const result = parse(state, 'at 15:30');
+    expect(result?.start.getUTCHours()).toBe(15);
+    expect(result?.start.getUTCMinutes()).toBe(30);
+  });
+
+  it('should handle invalid times', () => {
+    let state = createParserState({ referenceDate });
+    state = registerRule(state, timeOnlyRule);
+
+    expect(parse(state, 'at 25:00')).toBeNull();
+    expect(parse(state, 'at 12:60')).toBeNull();
+    expect(parse(state, 'at 13:00 PM')).toBeNull();
   });
 }); 

@@ -1,4 +1,4 @@
-import { RuleModule, IntermediateParse, ParseResult } from '../types/types';
+import { RuleModule, IntermediateParse, ParseResult, DateParsePreferences } from '../types/types';
 import { parseTimeString, timeComponentsToString } from '../utils/time-parser';
 import { Logger } from '../utils/Logger';
 
@@ -223,8 +223,9 @@ export const absoluteDatesRule: RuleModule = {
       parse: createMonthNameParser('DayFirst')
     }
   ],
-  interpret: (intermediate: IntermediateParse): ParseResult => {
-    const { year, month, day, hours, minutes, seconds, offsetMinutes } = intermediate.captures;
+  interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult | null => {
+    const { year, month, day, hours, minutes, seconds, offsetMinutes } = intermediate.captures || {};
+    if (!year || !month || !day) return null;
     
     Logger.debug('Interpreting date components', {
       year, month, day, hours, minutes, seconds, offsetMinutes
@@ -258,7 +259,7 @@ export const absoluteDatesRule: RuleModule = {
       type: 'single',
       start: date,
       confidence: 1.0,
-      text: intermediate.tokens[0]
+      text: intermediate.tokens?.[0] || intermediate.text || '',
     };
   }
 }; 

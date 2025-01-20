@@ -1,5 +1,5 @@
-import { ParserEngine } from './parser/parser-engine';
-import { DateParsePreferences, ParseResult } from './types/types';
+import { DateParsePreferences, ParseResult, RuleModule } from './types/types';
+import { parse, createParserState, registerRule, ParserState } from './parser/parser-engine';
 import { absoluteDatesRule } from './rules/absolute-dates';
 import { dateTimeRule } from './rules/date-time';
 import { timeOnlyRule } from './rules/time-only';
@@ -10,40 +10,37 @@ import { ordinalWeeksRule } from './rules/ordinal-weeks';
 import { relativeWeeksRule } from './rules/relative-weeks';
 import { fuzzyRangesRule } from './rules/fuzzy-ranges';
 
-export class NLDP {
-  private engine: ParserEngine;
+const defaultRules = [
+  absoluteDatesRule,  // ISO dates, YYYY-MM-DD etc
+  dateTimeRule,       // Date + time combinations
+  timeOnlyRule,       // Time expressions
+  relativeDaysRule,   // today, tomorrow, etc
+  ordinalDaysRule,    // 1st of March, etc
+  partialMonthRule,   // early/mid/late month
+  ordinalWeeksRule,   // first week of March
+  relativeWeeksRule,  // next week, last week
+  fuzzyRangesRule     // beginning of year, etc
+];
 
-  constructor(preferences: DateParsePreferences = {}) {
-    this.engine = new ParserEngine(preferences);
-    console.log(preferences);
-    this.registerDefaultRules();
-  }
+export const createNLDP = (preferences: DateParsePreferences = {}): NLDP => {
+  let state = createParserState(preferences);
+  
+  // Register default rules
+  defaultRules.forEach(rule => {
+    state = registerRule(state, rule);
+  });
 
-  /**
-   * Parse a natural language date/time string
-   */
-  parse(input: string, preferences: DateParsePreferences = {}): ParseResult | null {
-    console.log(input, preferences);
-    return this.engine.parse(input, preferences);
-  }
+  return {
+    parse: (input: string, parsePreferences: DateParsePreferences = {}) => 
+      parse(state, input, parsePreferences),
+    
+    registerRule: (rule: RuleModule) => {
+      state = registerRule(state, rule);
+    }
+  };
+};
 
-  /**
-   * Register a custom rule module
-   */
-  registerRule(rule: any): void {
-    this.engine.registerRule(rule);
-  }
-
-  private registerDefaultRules(): void {
-    // Register rules in order of precedence
-    this.engine.registerRule(absoluteDatesRule);  // ISO dates, YYYY-MM-DD etc
-    this.engine.registerRule(dateTimeRule);       // Date + time combinations
-    this.engine.registerRule(timeOnlyRule);       // Time expressions
-    this.engine.registerRule(relativeDaysRule);   // today, tomorrow, etc
-    this.engine.registerRule(ordinalDaysRule);    // 1st of March, etc
-    this.engine.registerRule(partialMonthRule);   // early/mid/late month
-    this.engine.registerRule(ordinalWeeksRule);   // first week of March
-    this.engine.registerRule(relativeWeeksRule);  // next week, last week
-    this.engine.registerRule(fuzzyRangesRule);    // beginning of year, etc
-  }
-} 
+export type NLDP = {
+  parse: (input: string, preferences?: DateParsePreferences) => ParseResult | null;
+  registerRule: (rule: RuleModule) => void;
+}; 

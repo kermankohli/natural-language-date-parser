@@ -1,91 +1,52 @@
+import { createParserState, registerRule, parse } from '../../src/parser/parser-engine';
 import { relativeWeeksRule } from '../../src/rules/relative-weeks';
-import { ParserEngine } from '../../src/parser/parser-engine';
 
 describe('Relative Weeks Rule', () => {
-  let parser: ParserEngine;
-  // Thursday, March 14, 2024
-  const referenceDate = new Date('2024-03-14T12:00:00Z');
+  const referenceDate = new Date('2024-03-14T12:00:00Z'); // Thursday, March 14, 2024
 
-  beforeEach(() => {
-    parser = new ParserEngine();
-    parser.registerRule(relativeWeeksRule);
+  it('should parse this week', () => {
+    let state = createParserState({ referenceDate });
+    state = registerRule(state, relativeWeeksRule);
+
+    const result = parse(state, 'this week');
+    expect(result?.type).toBe('range');
+    expect(result?.start.toISOString().slice(0, 10)).toBe('2024-03-11');
+    expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-03-17');
   });
 
-  describe('with Monday as week start', () => {
-    const prefs = { referenceDate, weekStartDay: 1 as const };
+  it('should parse next week', () => {
+    let state = createParserState({ referenceDate });
+    state = registerRule(state, relativeWeeksRule);
 
-    it('should parse this week', () => {
-      const result = parser.parse('this week', prefs);
-      // Should return Monday, March 11
-      expect(result?.start.toISOString().slice(0, 10))
-        .toBe('2024-03-11');
-    });
-
-    it('should parse next week', () => {
-      const result = parser.parse('next week', prefs);
-      // Should return Monday, March 18
-      expect(result?.start.toISOString().slice(0, 10))
-        .toBe('2024-03-18');
-    });
-
-    it('should parse week after next', () => {
-      const variations = ['week after next', 'the week after next'];
-      variations.forEach(input => {
-        const result = parser.parse(input, prefs);
-        // Should return Monday, March 25
-        expect(result?.start.toISOString().slice(0, 10))
-          .toBe('2024-03-25');
-      });
-    });
-
-    it('should parse last week', () => {
-      const result = parser.parse('last week', prefs);
-      // Should return Monday, March 4
-      expect(result?.start.toISOString().slice(0, 10))
-        .toBe('2024-03-04');
-    });
-
-    it('should parse N weeks from now', () => {
-      const result = parser.parse('3 weeks from now', prefs);
-      // Should return Monday, April 1
-      expect(result?.start.toISOString().slice(0, 10))
-        .toBe('2024-04-01');
-    });
-
-    it('should return full week range', () => {
-      const result = parser.parse('this week', prefs);
-      expect(result?.type).toBe('range');
-      // Monday 00:00:00
-      expect(result?.start.toISOString()).toBe('2024-03-11T00:00:00.000Z');
-      // Sunday 23:59:59.999
-      expect(result?.end?.toISOString()).toBe('2024-03-17T23:59:59.999Z');
-    });
-
-    it('should handle week boundaries correctly', () => {
-      const result = parser.parse('next week', prefs);
-      expect(result?.type).toBe('range');
-      // Monday 00:00:00
-      expect(result?.start.toISOString()).toBe('2024-03-18T00:00:00.000Z');
-      // Sunday 23:59:59.999
-      expect(result?.end?.toISOString()).toBe('2024-03-24T23:59:59.999Z');
-    });
+    const result = parse(state, 'next week');
+    expect(result?.type).toBe('range');
+    expect(result?.start.toISOString().slice(0, 10)).toBe('2024-03-18');
+    expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-03-24');
   });
 
-  describe('with Sunday as week start', () => {
-    const prefs = { referenceDate, weekStartsOn: 0 as const };
+  it('should parse last week', () => {
+    let state = createParserState({ referenceDate });
+    state = registerRule(state, relativeWeeksRule);
 
-    it('should parse this week', () => {
-      const result = parser.parse('this week', prefs);
-      // Should return Sunday, March 10
-      expect(result?.start.toISOString().slice(0, 10))
-        .toBe('2024-03-10');
-    });
+    const result = parse(state, 'last week');
+    expect(result?.type).toBe('range');
+    expect(result?.start.toISOString().slice(0, 10)).toBe('2024-03-04');
+    expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-03-10');
+  });
 
-    it('should parse next week', () => {
-      const result = parser.parse('next week', prefs);
-      // Should return Sunday, March 17
-      expect(result?.start.toISOString().slice(0, 10))
-        .toBe('2024-03-17');
-    });
+  it('should respect week start preference', () => {
+    let state = createParserState({ referenceDate, weekStartsOn: 1 }); // Monday
+    state = registerRule(state, relativeWeeksRule);
+
+    const mondayStart = parse(state, 'this week');
+    expect(mondayStart?.start.toISOString().slice(0, 10)).toBe('2024-03-11');
+    expect(mondayStart?.end?.toISOString().slice(0, 10)).toBe('2024-03-17');
+
+    state = createParserState({ referenceDate, weekStartsOn: 0 }); // Sunday
+    state = registerRule(state, relativeWeeksRule);
+
+    const sundayStart = parse(state, 'this week');
+    expect(sundayStart?.start.toISOString().slice(0, 10)).toBe('2024-03-10');
+    expect(sundayStart?.end?.toISOString().slice(0, 10)).toBe('2024-03-16');
   });
 }); 

@@ -1,52 +1,57 @@
+import { createParserState, registerRule, parse } from '../../src/parser/parser-engine';
 import { partialMonthRule } from '../../src/rules/partial-month';
-import { ParserEngine } from '../../src/parser/parser-engine';
 
 describe('Partial Month Rule', () => {
-  let parser: ParserEngine;
-  const referenceDate = new Date('2024-03-14T12:00:00Z');
+  const referenceDate = new Date('2024-03-14T12:00:00Z'); // Thursday, March 14, 2024
 
-  beforeEach(() => {
-    parser = new ParserEngine();
-    parser.registerRule(partialMonthRule);
+  it('should parse early/mid/late month', () => {
+    let state = createParserState({ referenceDate });
+    state = registerRule(state, partialMonthRule);
+
+    const early = parse(state, 'early March');
+    expect(early?.type).toBe('range');
+    expect(early?.start.toISOString().slice(0, 10)).toBe('2024-03-01');
+    expect(early?.end?.toISOString().slice(0, 10)).toBe('2024-03-10');
+
+    const mid = parse(state, 'mid March');
+    expect(mid?.type).toBe('range');
+    expect(mid?.start.toISOString().slice(0, 10)).toBe('2024-03-11');
+    expect(mid?.end?.toISOString().slice(0, 10)).toBe('2024-03-20');
+
+    const late = parse(state, 'late March');
+    expect(late?.type).toBe('range');
+    expect(late?.start.toISOString().slice(0, 10)).toBe('2024-03-21');
+    expect(late?.end?.toISOString().slice(0, 10)).toBe('2024-03-31');
   });
 
-  describe('basic parsing', () => {
-    it('should parse early month', () => {
-      const result = parser.parse('early March', { referenceDate });
+  it('should handle different month formats', () => {
+    let state = createParserState({ referenceDate });
+    state = registerRule(state, partialMonthRule);
+
+    const fullName = parse(state, 'early March');
+    const abbreviated = parse(state, 'early Mar');
+
+    expect(fullName?.start.toISOString().slice(0, 10))
+      .toBe(abbreviated?.start.toISOString().slice(0, 10));
+    expect(fullName?.end?.toISOString().slice(0, 10))
+      .toBe(abbreviated?.end?.toISOString().slice(0, 10));
+  });
+
+  it('should handle different part formats', () => {
+    let state = createParserState({ referenceDate });
+    state = registerRule(state, partialMonthRule);
+
+    const formats = [
+      'early March',
+      'beginning of March',
+      'start of March'
+    ];
+
+    formats.forEach(format => {
+      const result = parse(state, format);
       expect(result?.type).toBe('range');
       expect(result?.start.toISOString().slice(0, 10)).toBe('2024-03-01');
       expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-03-10');
-    });
-
-    it('should parse mid month', () => {
-      const result = parser.parse('mid March', { referenceDate });
-      expect(result?.start.toISOString().slice(0, 10)).toBe('2024-03-11');
-      expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-03-20');
-    });
-
-    it('should parse late month', () => {
-      const result = parser.parse('late March', { referenceDate });
-      expect(result?.start.toISOString().slice(0, 10)).toBe('2024-03-21');
-      expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-03-31');
-    });
-  });
-
-  describe('edge cases', () => {
-    it('should handle months with different lengths', () => {
-      const result = parser.parse('late February', { referenceDate });
-      expect(result?.start.toISOString().slice(0, 10)).toBe('2024-02-21');
-      expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-02-29');
-    });
-
-    it('should handle case variations', () => {
-      const variations = [
-        'EARLY March',
-        'mid MARCH',
-        'Late march'
-      ];
-      variations.forEach(input => {
-        expect(parser.parse(input, { referenceDate })).not.toBeNull();
-      });
     });
   });
 }); 

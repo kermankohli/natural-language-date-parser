@@ -4,8 +4,8 @@ export interface RuleMatchTrace {
   ruleName: string;
   input: string;
   matched: boolean;
-  tokens?: string[];
-  matchedGroups?: string[];
+  pattern?: string;
+  matches?: string[];
 }
 
 export interface ParseTrace {
@@ -14,44 +14,56 @@ export interface ParseTrace {
   finalResult?: any;
 }
 
-export class DebugTrace {
-  private static currentTrace: ParseTrace | null = null;
+export type DebugTraceState = {
+  currentTrace: ParseTrace | null;
+};
 
-  static startTrace(input: string) {
-    this.currentTrace = {
-      input,
-      matchAttempts: []
-    };
-  }
+const createDebugTraceState = (): DebugTraceState => ({
+  currentTrace: null
+});
 
-  static addRuleMatch(trace: RuleMatchTrace) {
-    if (!this.currentTrace) return;
-    
-    this.currentTrace.matchAttempts.push(trace);
-    Logger.debug(`Rule match attempt`, {
-      ruleName: trace.ruleName,
-      input: trace.input,
-      matched: trace.matched,
-      tokens: trace.tokens,
-      matchedGroups: trace.matchedGroups
-    });
-  }
+export const createDebugTrace = () => {
+  const state = createDebugTraceState();
 
-  static setFinalResult(result: any) {
-    if (!this.currentTrace) return;
-    
-    this.currentTrace.finalResult = result;
-    Logger.debug(`Parse complete`, {
-      input: this.currentTrace.input,
-      result
-    });
-  }
+  return {
+    startTrace: (input: string) => {
+      state.currentTrace = {
+        input,
+        matchAttempts: []
+      };
+    },
 
-  static getTrace(): ParseTrace | null {
-    return this.currentTrace;
-  }
+    addRuleMatch: (trace: RuleMatchTrace) => {
+      if (!state.currentTrace) return;
+      
+      state.currentTrace.matchAttempts.push(trace);
+      Logger.debug('Rule match attempt', {
+        ruleName: trace.ruleName,
+        input: trace.input,
+        matched: trace.matched,
+        pattern: trace.pattern,
+        matches: trace.matches
+      });
+    },
 
-  static clear() {
-    this.currentTrace = null;
-  }
-} 
+    endTrace: () => {
+      if (!state.currentTrace) return;
+      
+      Logger.debug('Parse complete', {
+        input: state.currentTrace.input,
+        matchAttempts: state.currentTrace.matchAttempts
+      });
+
+      state.currentTrace = null;
+    },
+
+    getTrace: (): ParseTrace | null => state.currentTrace,
+
+    clear: () => {
+      state.currentTrace = null;
+    }
+  };
+};
+
+// Create a singleton instance for backward compatibility
+export const debugTrace = createDebugTrace(); 

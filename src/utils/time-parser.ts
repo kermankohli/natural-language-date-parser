@@ -15,8 +15,16 @@ export function parseTimeString(
 ): TimeComponents | null {
   Logger.debug('Parsing time string', { timeStr, options });
 
-  const TIME_24H = /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(Z|[+-]\d{2}:\d{2})?$/i;
-  const TIME_12H = /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)(?:\s*(Z|[+-]\d{2}:\d{2})?)?$/i;
+  // Handle special times first
+  if (timeStr.toLowerCase() === 'noon') {
+    return { hours: 12, minutes: 0, seconds: 0, offsetMinutes: 0 };
+  }
+  if (timeStr.toLowerCase() === 'midnight') {
+    return { hours: 0, minutes: 0, seconds: 0, offsetMinutes: 0 };
+  }
+
+  const TIME_24H = /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(Z|[+-]\d{1,2}(?::?\d{2})?)?$/i;
+  const TIME_12H = /^(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?\s*(am|pm)(?:\s*(Z|[+-]\d{1,2}(?::?\d{2})?)?)?$/i;
 
   let match = timeStr.match(TIME_24H);
   let is12Hour = false;
@@ -30,7 +38,7 @@ export function parseTimeString(
 
   // Parse basic components
   let hours = parseInt(match[1]);
-  const minutes = parseInt(match[2]);
+  const minutes = match[2] ? parseInt(match[2]) : 0;
   const seconds = match[3] ? parseInt(match[3]) : 0;
   let offsetMinutes = 0;
 
@@ -41,7 +49,7 @@ export function parseTimeString(
   if (is12Hour) {
     const meridiem = match[4].toLowerCase();
     // Validate 12-hour format
-    if (hours > 12 || (hours === 0 && meridiem === 'pm')) return null;
+    if (hours > 12) return null;
     
     if (meridiem === 'pm') {
       hours = hours === 12 ? 12 : hours + 12;
@@ -59,7 +67,7 @@ export function parseTimeString(
     if (timezone.toUpperCase() === 'Z') {
       offsetMinutes = 0;
     } else {
-      const tzMatch = timezone.match(/([+-])(\d{2})(?::?(\d{2}))?/);
+      const tzMatch = timezone.match(/([+-])(\d{1,2})(?::?(\d{2}))?/);
       if (tzMatch) {
         const [, sign, tzHours, tzMinutes = '0'] = tzMatch;
         const tzH = parseInt(tzHours);
@@ -69,9 +77,6 @@ export function parseTimeString(
         if (tzH > 14 || tzM >= 60) return null;
         
         const offset = tzH * 60 + tzM;
-        // For UTC conversion: 
-        // If local is ahead (+), subtract to get UTC
-        // If local is behind (-), add to get UTC
         offsetMinutes = sign === '+' ? offset : -offset;
       }
     }

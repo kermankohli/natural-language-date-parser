@@ -197,23 +197,23 @@ export const fuzzyRangesRule: RuleModule = {
       })
     }
   ],
-  interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult => {
-    const referenceDate = prefs.referenceDate || new Date();
-    
-    if (intermediate.pattern === 'weekend') {
-      const offset = parseInt(intermediate.captures.offset);
-      const { start, end } = getWeekendRange(referenceDate, offset);
+  interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult | null => {
+    if (intermediate.pattern?.includes('offset')) {
+      const offset = parseInt(intermediate.captures?.offset || '0');
+      if (isNaN(offset)) return null;
+      const { start, end } = getWeekendRange(prefs.referenceDate || new Date(), offset);
       return {
         type: 'range',
         start,
         end,
         confidence: 1.0,
-        text: intermediate.tokens[0]
+        text: intermediate.tokens?.[0] || intermediate.text || ''
       };
     } else if (intermediate.pattern === 'half-month') {
-      const { half, month } = intermediate.captures;
+      const { half, month } = intermediate.captures || {};
+      if (!half || !month) return null;
       const monthNum = MONTHS[month as keyof typeof MONTHS];
-      const year = referenceDate.getUTCFullYear();
+      const year = prefs.referenceDate?.getUTCFullYear() || new Date().getUTCFullYear();
       
       // Get last day of month
       const lastDay = new Date(Date.UTC(year, monthNum, 0)).getUTCDate();
@@ -228,24 +228,26 @@ export const fuzzyRangesRule: RuleModule = {
         start,
         end,
         confidence: 1.0,
-        text: intermediate.tokens[0]
+        text: intermediate.tokens?.[0] || intermediate.text || ''
       };
     } else if (intermediate.pattern === 'period-part') {
-      const { part, period } = intermediate.captures;
-      const { start, end } = getPeriodRange(referenceDate, part, period);
+      const { part, period } = intermediate.captures || {};
+      if (!part || !period) return null;
+      const { start, end } = getPeriodRange(prefs.referenceDate || new Date(), part, period);
       
       return {
         type: 'range',
         start,
         end,
         confidence: 1.0,
-        text: intermediate.tokens[0]
+        text: intermediate.tokens?.[0] || intermediate.text || ''
       };
     } else if (intermediate.pattern === 'days-of-month') {
-      const { position, count, month } = intermediate.captures;
-      let year = referenceDate.getUTCFullYear();
+      const { position, count, month } = intermediate.captures || {};
+      if (!position || !count || !month) return null;
+      let year = prefs.referenceDate?.getUTCFullYear() || new Date().getUTCFullYear();
       let monthNum = month === 'next month' 
-        ? referenceDate.getUTCMonth() + 2 
+        ? (prefs.referenceDate?.getUTCMonth() ?? new Date().getUTCMonth()) + 2 
         : MONTHS[month as keyof typeof MONTHS];
       
       // Handle year rollover
@@ -287,11 +289,12 @@ export const fuzzyRangesRule: RuleModule = {
         start: startDate,
         end: endDate,
         confidence: 1.0,
-        text: intermediate.tokens[0]
+        text: intermediate.tokens?.[0] || intermediate.text || ''
       };
     } else if (intermediate.pattern === 'month-parts') {
-      const { part, month } = intermediate.captures;
-      const year = referenceDate.getUTCFullYear();
+      const { part, month } = intermediate.captures || {};
+      if (!part || !month) return null;
+      const year = prefs.referenceDate?.getUTCFullYear() || new Date().getUTCFullYear();
       const monthNum = MONTHS[month as keyof typeof MONTHS];
       
       let startDate: Date;
@@ -320,16 +323,17 @@ export const fuzzyRangesRule: RuleModule = {
         start: startDate,
         end: endDate,
         confidence: 1.0,
-        text: intermediate.tokens[0]
+        text: intermediate.tokens?.[0] || intermediate.text || ''
       };
     } else if (intermediate.pattern === 'multiple-weekends') {
-      const offset = parseInt(intermediate.captures.offset);
-      const count = parseInt(intermediate.captures.count);
+      const offset = parseInt(intermediate.captures?.offset || '0');
+      const count = parseInt(intermediate.captures?.count || '0');
+      if (isNaN(offset) || isNaN(count)) return null;
       return {
         type: 'range',
-        ...getMultipleWeekendRange(referenceDate, offset, count),
+        ...getMultipleWeekendRange(prefs.referenceDate || new Date(), offset, count),
         confidence: 1.0,
-        text: intermediate.tokens[0]
+        text: intermediate.tokens?.[0] || intermediate.text || ''
       };
     }
     

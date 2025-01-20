@@ -125,19 +125,25 @@ export const relativeWeeksRule: RuleModule = {
       }
     }
   ],
-  interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult => {
+  interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult | null => {
+    const { offset, returnRange } = intermediate.captures || {};
+    if (!offset) return null;
+
+    const offsetNum = parseInt(offset, 10);
+    if (isNaN(offsetNum)) return null;
+
+    const shouldReturnRange = returnRange === 'true';
+
     const referenceDate = prefs.referenceDate || new Date();
     const weekStartsOn = prefs.weekStartsOn ?? 1;
-    const offset = parseInt(intermediate.captures.offset, 10);
-    const returnRange = intermediate.captures.returnRange === 'true';
 
     // First find start of current week
     const thisWeekStart = getWeekStart(referenceDate, weekStartsOn);
     
     // Then add the offset weeks
-    const targetDate = addWeeks(thisWeekStart, offset);
+    const targetDate = addWeeks(thisWeekStart, offsetNum);
 
-    if (returnRange) {
+    if (shouldReturnRange) {
       const end = new Date(targetDate);
       end.setUTCDate(end.getUTCDate() + 6);
       end.setUTCHours(23, 59, 59, 999);
@@ -147,7 +153,7 @@ export const relativeWeeksRule: RuleModule = {
         start: targetDate,
         end,
         confidence: 1.0,
-        text: intermediate.tokens[0]
+        text: intermediate.tokens?.[0] || intermediate.text || ''
       };
     }
 
@@ -155,7 +161,7 @@ export const relativeWeeksRule: RuleModule = {
       type: 'single',
       start: targetDate,
       confidence: 1.0,
-      text: intermediate.tokens[0]
+      text: intermediate.tokens?.[0] || intermediate.text || ''
     };
   }
 };

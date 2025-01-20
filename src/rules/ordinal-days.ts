@@ -9,9 +9,18 @@ const ORDINALS = {
 };
 
 const MONTHS = {
-  january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
-  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
-  jan: 1, feb: 2, mar: 3, apr: 4, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12
+  'january': 1, 'jan': 1,
+  'february': 2, 'feb': 2,
+  'march': 3, 'mar': 3,
+  'april': 4, 'apr': 4,
+  'may': 5,
+  'june': 6, 'jun': 6,
+  'july': 7, 'jul': 7,
+  'august': 8, 'aug': 8,
+  'september': 9, 'sep': 9, 'sept': 9,
+  'october': 10, 'oct': 10,
+  'november': 11, 'nov': 11,
+  'december': 12, 'dec': 12
 };
 
 const DAYS = {
@@ -168,103 +177,61 @@ export const ordinalDaysRule: RuleModule = {
       }
     },
     {
-      // "1st of March"
       name: 'nth-of-month',
-      regex: /^(?:the\s+)?(\d+)(?:st|nd|rd|th)\s+(?:of\s+)?(january|february|march|april|may|june|july|august|september|october|november|december)$/i,
+      regex: /^(?:the\s+)?(\d+)(?:st|nd|rd|th)?\s+(?:of\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)$/i,
       parse: (matches: RegExpMatchArray): IntermediateParse => {
         Logger.debug('Parsing nth of month', { matches: matches.map(m => m) });
+        const [, day, month] = matches;
         return {
           type: 'ordinal',
           tokens: [matches[0]],
           pattern: 'nth-of-month',
           captures: {
-            day: matches[1],
-            month: matches[2].toLowerCase()
+            day,
+            month: month.toLowerCase()
           }
         };
       }
     }
   ],
   interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult | null => {
-    const referenceDate = prefs.referenceDate || new Date();
-    const year = referenceDate.getUTCFullYear();
+    if (!intermediate.captures) return null;
+
+    const { day, month } = intermediate.captures;
+    if (!day || !month) return null;
+
+    const dayNum = parseInt(day, 10);
+    if (isNaN(dayNum)) return null;
+
+    // Map abbreviated month names to full names
+    const monthMap: { [key: string]: string } = {
+      jan: 'january', feb: 'february', mar: 'march', apr: 'april',
+      may: 'may', jun: 'june', jul: 'july', aug: 'august',
+      sep: 'september', oct: 'october', nov: 'november', dec: 'december'
+    };
+    const fullMonth = monthMap[month] || month;
+    const monthNum = MONTHS[fullMonth as keyof typeof MONTHS];
+    if (!monthNum) return null;
+
+    const year = prefs.referenceDate?.getUTCFullYear() || new Date().getUTCFullYear();
+
+    Logger.debug('Interpreting nth of month', {
+      month: monthNum,
+      day: dayNum,
+      result: new Date(Date.UTC(year, monthNum - 1, dayNum)).toISOString()
+    });
+
+    // Create the date
+    const result = new Date(Date.UTC(year, monthNum - 1, dayNum));
     
-    if (intermediate.pattern === 'nth-weekday-in-month') {
-      const n = parseInt(intermediate.captures.n);
-      const weekday = WEEKDAYS[intermediate.captures.weekday as keyof typeof WEEKDAYS];
-      const month = MONTHS[intermediate.captures.month as keyof typeof MONTHS];
-      
-      const date = findNthWeekday(year, month, weekday, n);
-      if (!date) {
-        return null;
-      }
-      
-      date.setUTCHours(0, 0, 0, 0);
-      
-      Logger.debug('Interpreting nth weekday in month', {
-        n,
-        weekday,
-        month,
-        result: date.toISOString()
-      });
-      
-      return {
-        type: 'single',
-        start: date,
-        confidence: 1.0,
-        text: intermediate.tokens[0]
-      };
-    } else if (intermediate.pattern === 'end-of-month') {
-      // end-of-month pattern
-      const currentMonth = intermediate.captures.month === 'month'
-        ? referenceDate.getUTCMonth() + 1
-        : MONTHS[intermediate.captures.month as keyof typeof MONTHS];
-      const ordinalNum = ORDINALS[intermediate.captures.ordinal as keyof typeof ORDINALS];
-      const date = findNthFromEnd(year, currentMonth, Math.abs(ordinalNum));
-      
-      if (!date) {
-        return null;
-      }
-      
-      date.setUTCHours(0, 0, 0, 0);
-      
-      Logger.debug('Interpreting end of month', {
-        month: currentMonth,
-        ordinal: intermediate.captures.ordinal,
-        result: date.toISOString()
-      });
-      
-      return {
-        type: 'single',
-        start: date,
-        confidence: 1.0,
-        text: intermediate.tokens[0]
-      };
-    } else {
-      // nth-of-month pattern
-      const monthNum = MONTHS[intermediate.captures.month as keyof typeof MONTHS];
-      const dayNum = parseInt(intermediate.captures.day);
-      const date = new Date(Date.UTC(year, monthNum - 1, dayNum));
-      
-      // Validate date
-      if (date.getUTCMonth() !== monthNum - 1 || date.getUTCDate() !== dayNum) {
-        return null;
-      }
-      
-      date.setUTCHours(0, 0, 0, 0);
-      
-      Logger.debug('Interpreting nth of month', {
-        month: monthNum,
-        day: dayNum,
-        result: date.toISOString()
-      });
-      
-      return {
-        type: 'single',
-        start: date,
-        confidence: 1.0,
-        text: intermediate.tokens[0]
-      };
-    }
+    // Validate the date is valid (e.g., not 31st of February)
+    if (result.getUTCMonth() !== monthNum - 1) return null;
+
+    return {
+      type: 'single',
+      start: result,
+      confidence: 1.0,
+      text: intermediate.tokens?.[0] || intermediate.text || ''
+    };
   }
 }; 

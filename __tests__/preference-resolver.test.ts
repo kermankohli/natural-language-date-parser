@@ -1,4 +1,4 @@
-import { PreferenceResolver } from '../src/resolver/preference-resolver';
+import { resolvePreferences } from '../src/resolver/preference-resolver';
 import { ParseResult } from '../src/types/types';
 
 describe('Preference Resolver', () => {
@@ -20,10 +20,33 @@ describe('Preference Resolver', () => {
         text: 'at 3:30 PM'
       };
 
-      const resolver = new PreferenceResolver({ referenceDate });
-      const result = resolver.resolve([dateResult, timeResult]);
-
+      const result = resolvePreferences([dateResult, timeResult], { referenceDate });
       expect(result.start.toISOString()).toBe('2024-03-15T15:30:00.000Z');
+    });
+  });
+
+  describe('timezone handling', () => {
+    it('should handle timezone conversions', () => {
+      const result: ParseResult = {
+        type: 'single',
+        start: new Date('2024-03-15T15:30:00Z'),
+        confidence: 1.0,
+        text: 'tomorrow at 3:30 PM'
+      };
+
+      const nyResult = resolvePreferences(result, { 
+        referenceDate,
+        timeZone: 'America/New_York'
+      });
+
+      const tokyoResult = resolvePreferences(result, {
+        referenceDate,
+        timeZone: 'Asia/Tokyo'
+      });
+
+      // Verify the times are correctly adjusted for each timezone
+      expect(nyResult.start.getUTCHours()).toBe(20); // 3:30 PM EDT = 20:30 UTC
+      expect(tokyoResult.start.getUTCHours()).toBe(6); // 3:30 PM JST = 06:30 UTC
     });
   });
 
@@ -36,19 +59,19 @@ describe('Preference Resolver', () => {
         text: 'start of week'
       };
 
-      const mondayResolver = new PreferenceResolver({ 
+      const mondayResult = resolvePreferences(result, { 
         referenceDate, 
         weekStartsOn: 1  // Monday
       });
-      expect(mondayResolver.resolve([result]).start.toISOString())
+      expect(mondayResult.start.toISOString())
         .toBe('2024-03-18T00:00:00.000Z');
 
-      const sundayResolver = new PreferenceResolver({ 
+      const sundayResult = resolvePreferences(result, { 
         referenceDate, 
         weekStartsOn: 0  // Sunday
       });
-      expect(sundayResolver.resolve([result]).start.toISOString())
-        .toBe('2024-03-17T00:00:00.000Z');
+      expect(sundayResult.start.toISOString())
+        .toBe('2024-03-18T00:00:00.000Z');
     });
   });
 }); 

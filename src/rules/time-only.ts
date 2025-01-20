@@ -4,10 +4,10 @@ import { Logger } from '../utils/Logger';
 import { DateTime } from 'luxon';
 
 const TIME_PATTERNS = {
-  TIME_24H: /^(\d{1,2}):(\d{2})(?::(\d{2}))?(Z|[+-]\d{1,2}(?::?\d{2})?)?$/i,
-  TIME_12H: /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)(?:\s*(Z|[+-]\d{1,2}(?::?\d{2})?)?)?$/i,
-  TIME_12H_SIMPLE: /^(\d{1,2})\s*(am|pm)$/i,
-  TIME_SPECIAL: /^(noon|midnight)$/i
+  TIME_24H: /^(?:at\s+)?(\d{1,2}):(\d{2})(?::(\d{2}))?(Z|[+-]\d{1,2}(?::?\d{2})?)?$/i,
+  TIME_12H: /^(?:at\s+)?(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)(?:\s*(Z|[+-]\d{1,2}(?::?\d{2})?)?)?$/i,
+  TIME_12H_SIMPLE: /^(?:at\s+)?(\d{1,2})\s*(am|pm)$/i,
+  TIME_SPECIAL: /^(?:at\s+)?(noon|midnight)$/i
 };
 
 export const timeOnlyRule: RuleModule = {
@@ -19,7 +19,7 @@ export const timeOnlyRule: RuleModule = {
       parse: (matches: RegExpMatchArray): IntermediateParse | null => {
         Logger.debug('Parsing 24h time', { matches: matches.map(m => m) });
         
-        const timeStr = matches[0];
+        const timeStr = matches[0].replace(/^at\s+/, '');
         const parsed = parseTimeString(timeStr);
         if (!parsed) return null;
 
@@ -37,7 +37,7 @@ export const timeOnlyRule: RuleModule = {
       parse: (matches: RegExpMatchArray): IntermediateParse | null => {
         Logger.debug('Parsing 12h time', { matches: matches.map(m => m) });
         
-        const timeStr = matches[0];
+        const timeStr = matches[0].replace(/^at\s+/, '');
         const parsed = parseTimeString(timeStr, { allow12Hour: true });
         if (!parsed) return null;
 
@@ -91,24 +91,25 @@ export const timeOnlyRule: RuleModule = {
       }
     }
   ],
-  interpret: (intermediate: IntermediateParse, context: DateParsePreferences): ParseResult => {
-    const { hours, minutes, seconds, offsetMinutes } = intermediate.captures;
-    if (!context.referenceDate) return { type: 'single', start: new Date(), confidence: 0, text: '' };
+  interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult | null => {
+    const { hours, minutes, seconds, offsetMinutes } = intermediate.captures || {};
+    if (!hours) return null;
+    if (!prefs.referenceDate) return { type: 'single', start: new Date(), confidence: 0, text: '' };
 
     Logger.debug('Interpreting time in time-only rule', {
       hours,
       minutes,
       seconds,
       offsetMinutes,
-      referenceDate: context.referenceDate,
+      referenceDate: prefs.referenceDate,
       pattern: intermediate.pattern,
       tokens: intermediate.tokens,
-      timeZone: context.timeZone,
-      context: JSON.stringify(context)
+      timeZone: prefs.timeZone,
+      context: JSON.stringify(prefs)
     });
 
     // Create a DateTime object in the target timezone using the target date
-    const targetDate = DateTime.fromJSDate(context.referenceDate, { zone: context.timeZone || 'UTC' });
+    const targetDate = DateTime.fromJSDate(prefs.referenceDate, { zone: prefs.timeZone || 'UTC' });
     const dt = DateTime.fromObject(
       {
         year: targetDate.year,
@@ -118,19 +119,19 @@ export const timeOnlyRule: RuleModule = {
         minute: minutes ? parseInt(minutes) : 0,
         second: seconds ? parseInt(seconds) : 0
       },
-      { zone: context.timeZone || 'UTC' }
+      { zone: prefs.timeZone || 'UTC' }
     );
 
     Logger.debug('Created DateTime', {
       input: { hours, minutes, seconds },
-      zone: context.timeZone,
+      zone: prefs.timeZone,
       result: dt.toISO(),
       offset: dt.offset,
       isDST: dt.isInDST
     });
 
     // If there's an explicit offset in the time string (e.g. "3pm +0200"), apply it
-    if (!context.timeZone && offsetMinutes) {
+    if (!prefs.timeZone && offsetMinutes) {
       const offset = parseInt(offsetMinutes);
       const adjustedDt = dt.minus({ minutes: offset });
       
@@ -140,19 +141,26 @@ export const timeOnlyRule: RuleModule = {
       });
 
       return {
-        type: 'time',
+        type: 'single',
         start: adjustedDt.toJSDate(),
         confidence: 1.0,
-        text: intermediate.tokens[0]
+        text: intermediate.tokens?.[0] || intermediate.text || ''
       };
     }
 
     // Convert to UTC and return
+    const utc = dt.toUTC();
+    Logger.debug('Converted to UTC', {
+      result: utc.toISO(),
+      offset: utc.offset,
+      isDST: utc.isInDST
+    });
+
     return {
-      type: 'time',
-      start: dt.toJSDate(),
+      type: 'single',
+      start: utc.toJSDate(),
       confidence: 1.0,
-      text: intermediate.tokens[0]
+      text: intermediate.tokens?.[0] || intermediate.text || ''
     };
   }
 }; 
