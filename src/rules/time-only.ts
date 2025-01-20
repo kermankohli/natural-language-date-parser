@@ -140,7 +140,7 @@ export const timeOnlyRule: RuleModule = {
       });
 
       return {
-        type: 'single',
+        type: 'time',
         start: adjustedDt.toJSDate(),
         confidence: 1.0,
         text: intermediate.tokens[0]
@@ -148,16 +148,9 @@ export const timeOnlyRule: RuleModule = {
     }
 
     // Convert to UTC and return
-    const utc = dt.toUTC();
-    Logger.debug('Converted to UTC', {
-      result: utc.toISO(),
-      offset: utc.offset,
-      isDST: utc.isInDST
-    });
-
     return {
-      type: 'single',
-      start: utc.toJSDate(),
+      type: 'time',
+      start: dt.toJSDate(),
       confidence: 1.0,
       text: intermediate.tokens[0]
     };

@@ -18,6 +18,8 @@ export class PreferenceResolver {
       weekStartsOn: preferences.weekStartsOn || 0,
       timeZone: preferences.timeZone
     };
+
+    console.log(this.context);
   }
 
   resolve(results: ParseResult[]): ParseResult {

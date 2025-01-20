@@ -15,6 +15,7 @@ export class NLDP {
 
   constructor(preferences: DateParsePreferences = {}) {
     this.engine = new ParserEngine(preferences);
+    console.log(preferences);
     this.registerDefaultRules();
   }
 
@@ -22,6 +23,7 @@ export class NLDP {
    * Parse a natural language date/time string
    */
   parse(input: string, preferences: DateParsePreferences = {}): ParseResult | null {
+    console.log(input, preferences);
     return this.engine.parse(input, preferences);
   }
 

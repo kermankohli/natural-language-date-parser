@@ -28,9 +28,11 @@ export class ParserEngine {
   parse(input: string, preferences: DateParsePreferences = {}): ParseResult | null {
     const mergedPrefs = { ...this.defaultPreferences, ...preferences };
     this.resolver = new PreferenceResolver(mergedPrefs);
-
+    
     // Regular parsing flow
     const tokens = tokenize(input, this.tokenizerOptions);
+
+    console.log(tokens);
 
     if (mergedPrefs.debug) {
       DebugTrace.startTrace(input);
@@ -80,18 +82,26 @@ export class ParserEngine {
 
     // If no direct match found, check if this is a combined date + time expression
     const combinedMatch = input.match(/^(.+)\s+at\s+(.+)$/i);
+    console.log(combinedMatch);
     if (combinedMatch) {
       const [, datePart, timePart] = combinedMatch;
+      console.log(datePart, timePart);
       
       // Parse date and time parts separately
       const dateResult = this.parse(datePart, mergedPrefs);
+      console.log(`1`);
       if (!dateResult) return null;
+      
 
       // Parse time part without 'at' prefix
       const timeResult = this.parse(timePart, mergedPrefs);
+      console.log(`2`);
       if (!timeResult) return null;
+      
 
       // Let the resolver combine the results
+      console.log(`3`);
+      console.log(dateResult, timeResult);
       return this.resolver.resolve([dateResult, timeResult]);
     }
 

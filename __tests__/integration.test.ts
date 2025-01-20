@@ -163,13 +163,17 @@ describe('NLDP Integration Tests', () => {
         timeZone: 'America/New_York'
       });
 
+      console.log(nyParser);
+
       // Before DST change
       const before = nyParser.parse('today at 3pm');
-      expect(before?.start.toISOString()).toBe('2024-03-09T20:00:00.000Z');
+      console.log(before);
+      expect(before?.start).toBe('2024-03-09T20:00:00.000Z');
 
       // After DST change
       const after = nyParser.parse('tomorrow at 3pm');
-      expect(after?.start.toISOString()).toBe('2024-03-10T19:00:00.000Z');
+      console.log(after);
+      expect(after?.start).toBe('2024-03-10T19:00:00.000Z');
     });
   });
 }); 

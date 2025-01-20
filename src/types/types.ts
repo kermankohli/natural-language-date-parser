@@ -12,7 +12,7 @@ export interface DateParsePreferences {
  * Result of a successful date/time parse
  */
 export interface ParseResult {
-  type: 'single' | 'range';
+  type: 'single' | 'range' | 'time';
   start: Date;
   end?: Date;                  // Only present when type === 'range'
   text: string;               // Original input text
