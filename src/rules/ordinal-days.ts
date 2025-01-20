@@ -160,7 +160,6 @@ export const ordinalDaysRule: RuleModule = {
       }
     },
     {
-      // "penultimate day of the month"
       name: 'end-of-month',
       regex: /^(?:the\s+)?(last|penultimate|ultimate|second to last|third to last)\s+day\s+(?:of\s+)?(?:the\s+)?(?:month|(?:january|february|march|april|may|june|july|august|september|october|november|december))$/i,
       parse: (matches: RegExpMatchArray): IntermediateParse => {
@@ -178,7 +177,7 @@ export const ordinalDaysRule: RuleModule = {
     },
     {
       name: 'nth-of-month',
-      regex: /^(?:the\s+)?(\d+)(?:st|nd|rd|th)?\s+(?:of\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)$/i,
+      regex: /^(?:the\s+)?(\d+)(?:st|nd|rd|th)?\s+(?:of\s+)?(?:day\s+of\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)$/i,
       parse: (matches: RegExpMatchArray): IntermediateParse => {
         Logger.debug('Parsing nth of month', { matches: matches.map(m => m) });
         const [, day, month] = matches;
@@ -186,6 +185,23 @@ export const ordinalDaysRule: RuleModule = {
           type: 'ordinal',
           tokens: [matches[0]],
           pattern: 'nth-of-month',
+          captures: {
+            day,
+            month: month.toLowerCase()
+          }
+        };
+      }
+    },
+    {
+      name: 'month-nth',
+      regex: /^(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+(?:the\s+)?(\d+)(?:st|nd|rd|th)?$/i,
+      parse: (matches: RegExpMatchArray): IntermediateParse => {
+        Logger.debug('Parsing month nth', { matches: matches.map(m => m) });
+        const [, month, day] = matches;
+        return {
+          type: 'ordinal',
+          tokens: [matches[0]],
+          pattern: 'month-nth',
           captures: {
             day,
             month: month.toLowerCase()
@@ -203,29 +219,43 @@ export const ordinalDaysRule: RuleModule = {
     const dayNum = parseInt(day, 10);
     if (isNaN(dayNum)) return null;
 
-    // Map abbreviated month names to full names
-    const monthMap: { [key: string]: string } = {
-      jan: 'january', feb: 'february', mar: 'march', apr: 'april',
-      may: 'may', jun: 'june', jul: 'july', aug: 'august',
-      sep: 'september', oct: 'october', nov: 'november', dec: 'december'
-    };
-    const fullMonth = monthMap[month] || month;
-    const monthNum = MONTHS[fullMonth as keyof typeof MONTHS];
+    // Map abbreviated month names to full names using MONTHS object
+    const monthNum = MONTHS[month.toLowerCase() as keyof typeof MONTHS];
     if (!monthNum) return null;
 
-    const year = prefs.referenceDate?.getUTCFullYear() || new Date().getUTCFullYear();
+    // Use the reference date's year for validation
+    const referenceYear = prefs.referenceDate?.getUTCFullYear() || new Date().getUTCFullYear();
+    const targetYear = referenceYear;
+
+    // For February, check if it's a leap year when day is 29
+    if (monthNum === 2 && dayNum === 29) {
+      const isLeapYear = (targetYear % 4 === 0 && targetYear % 100 !== 0) || (targetYear % 400 === 0);
+      if (!isLeapYear) {
+        Logger.debug('Invalid date: February 29 in non-leap year', { targetYear });
+        return null;
+      }
+    }
+
+    // Validate the day number is valid for the given month and year
+    const lastDayOfMonth = new Date(Date.UTC(targetYear, monthNum, 0)).getUTCDate();
+    if (dayNum < 1 || dayNum > lastDayOfMonth) {
+      Logger.debug('Invalid day for month', {
+        day: dayNum,
+        month: monthNum,
+        year: targetYear,
+        lastDayOfMonth
+      });
+      return null;
+    }
 
     Logger.debug('Interpreting nth of month', {
       month: monthNum,
       day: dayNum,
-      result: new Date(Date.UTC(year, monthNum - 1, dayNum)).toISOString()
+      result: new Date(Date.UTC(targetYear, monthNum - 1, dayNum)).toISOString()
     });
 
     // Create the date
-    const result = new Date(Date.UTC(year, monthNum - 1, dayNum));
-    
-    // Validate the date is valid (e.g., not 31st of February)
-    if (result.getUTCMonth() !== monthNum - 1) return null;
+    const result = new Date(Date.UTC(targetYear, monthNum - 1, dayNum));
 
     return {
       type: 'single',

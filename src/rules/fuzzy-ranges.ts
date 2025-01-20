@@ -55,57 +55,67 @@ function getMultipleWeekendRange(referenceDate: Date, offset: number, count: num
   return { start, end };
 }
 
-function getPeriodRange(referenceDate: Date, part: string, period: string): { start: Date, end: Date } {
-  const start = new Date(referenceDate);
-  const end = new Date(referenceDate);
-  
-  // Reset time components
-  start.setUTCHours(0, 0, 0, 0);
-  end.setUTCHours(23, 59, 59, 999);
-  
+function getPeriodRange(part: string, period: string, referenceDate: Date): { start: Date; end: Date } {
+  const year = referenceDate.getUTCFullYear();
+  const month = referenceDate.getUTCMonth();
+
   if (period === 'year') {
-    const year = start.getUTCFullYear();
     if (part === 'beginning') {
-      start.setUTCMonth(0, 1);
-      end.setUTCMonth(3, 30);
+      return {
+        start: new Date(Date.UTC(year, 0, 1)),
+        end: new Date(Date.UTC(year, 2, 31))
+      };
     } else if (part === 'middle') {
-      start.setUTCMonth(4, 1);
-      end.setUTCMonth(7, 31);
+      return {
+        start: new Date(Date.UTC(year, 4, 1)),
+        end: new Date(Date.UTC(year, 7, 31))
+      };
     } else { // end
-      start.setUTCMonth(8, 1);
-      end.setUTCMonth(11, 31);
+      return {
+        start: new Date(Date.UTC(year, 8, 1)),
+        end: new Date(Date.UTC(year, 11, 31))
+      };
     }
   } else if (period === 'month') {
-    const year = start.getUTCFullYear();
-    const month = start.getUTCMonth();
-    const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-    const third = Math.floor(lastDay / 3);
-    
+    const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
     if (part === 'beginning') {
-      start.setUTCDate(1);
-      end.setUTCDate(third);
+      return {
+        start: new Date(Date.UTC(year, month, 1)),
+        end: new Date(Date.UTC(year, month, 10))
+      };
     } else if (part === 'middle') {
-      start.setUTCDate(third + 1);
-      end.setUTCDate(third * 2);
+      return {
+        start: new Date(Date.UTC(year, month, 11)),
+        end: new Date(Date.UTC(year, month, 20))
+      };
     } else { // end
-      start.setUTCDate(third * 2 + 1);
-      end.setUTCDate(lastDay);
+      return {
+        start: new Date(Date.UTC(year, month, 21)),
+        end: new Date(Date.UTC(year, month, daysInMonth))
+      };
     }
-  } else if (period === 'week') {
-    const dayOfWeek = start.getUTCDay();
+  } else { // week
+    const dayOfWeek = referenceDate.getUTCDay();
+    const startOfWeek = new Date(Date.UTC(year, month, referenceDate.getUTCDate() - dayOfWeek));
+    const endOfWeek = new Date(Date.UTC(year, month, referenceDate.getUTCDate() + (6 - dayOfWeek)));
+
     if (part === 'beginning') {
-      start.setUTCDate(start.getUTCDate() - dayOfWeek);
-      end.setUTCDate(end.getUTCDate() - dayOfWeek + 2);
+      return {
+        start: startOfWeek,
+        end: new Date(Date.UTC(startOfWeek.getUTCFullYear(), startOfWeek.getUTCMonth(), startOfWeek.getUTCDate() + 2))
+      };
     } else if (part === 'middle') {
-      start.setUTCDate(start.getUTCDate() - dayOfWeek + 3);
-      end.setUTCDate(end.getUTCDate() - dayOfWeek + 4);
+      return {
+        start: new Date(Date.UTC(startOfWeek.getUTCFullYear(), startOfWeek.getUTCMonth(), startOfWeek.getUTCDate() + 2)),
+        end: new Date(Date.UTC(startOfWeek.getUTCFullYear(), startOfWeek.getUTCMonth(), startOfWeek.getUTCDate() + 4))
+      };
     } else { // end
-      start.setUTCDate(start.getUTCDate() - dayOfWeek + 5);
-      end.setUTCDate(end.getUTCDate() - dayOfWeek + 6);
+      return {
+        start: new Date(Date.UTC(startOfWeek.getUTCFullYear(), startOfWeek.getUTCMonth(), startOfWeek.getUTCDate() + 4)),
+        end: endOfWeek
+      };
     }
   }
-  
-  return { start, end };
 }
 
 export const fuzzyRangesRule: RuleModule = {
@@ -142,16 +152,36 @@ export const fuzzyRangesRule: RuleModule = {
     {
       // "beginning of year", "middle of month", "end of week"
       name: 'period-part',
-      regex: /^(beginning|middle|end)\s+of\s+(year|month|week)$/i,
-      parse: (matches: RegExpMatchArray): IntermediateParse => ({
-        type: 'range',
-        tokens: [matches[0]],
-        pattern: 'period-part',
-        captures: {
-          part: matches[1].toLowerCase(),
-          period: matches[2].toLowerCase()
-        }
-      })
+      regex: /^(?:the\s+)?(beginning|middle|mid|end|start|early|late)(?:\s+(?:of|in)\s+(?:the\s+)?|\s+|\-)(year|month|week)(?:\s+end)?$|^(year|month|week)[-\s](beginning|middle|mid|end|start|early|late)$/i,
+      parse: (matches: RegExpMatchArray, preferences: DateParsePreferences): IntermediateParse | null => {
+        const [fullMatch, part1, period1, period2, part2] = matches;
+        let part = part1 || part2;
+        let period = period1 || period2;
+
+        // Handle null matches
+        if (!part || !period) return null;
+
+        // Normalize parts
+        let normalizedPart = part.toLowerCase();
+        if (normalizedPart === 'start' || normalizedPart === 'early') normalizedPart = 'beginning';
+        if (normalizedPart === 'mid') normalizedPart = 'middle';
+        if (normalizedPart === 'late') normalizedPart = 'end';
+
+        const { start, end } = getPeriodRange(normalizedPart, period.toLowerCase(), preferences.referenceDate || new Date());
+        
+        return {
+          type: 'range',
+          start,
+          end,
+          text: fullMatch,
+          confidence: 1.0,
+          pattern: 'period-part',
+          captures: {
+            part: normalizedPart,
+            period: period.toLowerCase()
+          }
+        };
+      }
     },
     {
       // "first 3 days of next month"
@@ -233,7 +263,11 @@ export const fuzzyRangesRule: RuleModule = {
     } else if (intermediate.pattern === 'period-part') {
       const { part, period } = intermediate.captures || {};
       if (!part || !period) return null;
-      const { start, end } = getPeriodRange(prefs.referenceDate || new Date(), part, period);
+
+      // Only accept valid periods
+      if (!['year', 'month', 'week'].includes(period)) return null;
+
+      const { start, end } = getPeriodRange(part, period, prefs.referenceDate || new Date());
       
       return {
         type: 'range',

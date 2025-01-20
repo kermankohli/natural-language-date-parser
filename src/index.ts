@@ -14,7 +14,7 @@ export { DateParsePreferences, ParseResult, RuleModule } from './types/types';
 
 // Export individual rules for custom configurations
 export { absoluteDatesRule } from './rules/absolute-dates';
-export { dateTimeRule } from './rules/date-time';
+export { dateOnlyRule } from './rules/date-only';
 export { timeOnlyRule } from './rules/time-only';
 export { relativeDaysRule } from './rules/relative-days';
 export { ordinalDaysRule } from './rules/ordinal-days';

@@ -11,7 +11,7 @@ describe('Fuzzy Ranges Rule', () => {
     const beginningOfYear = parse(state, 'beginning of year');
     expect(beginningOfYear?.type).toBe('range');
     expect(beginningOfYear?.start.toISOString().slice(0, 10)).toBe('2024-01-01');
-    expect(beginningOfYear?.end?.toISOString().slice(0, 10)).toBe('2024-01-10');
+    expect(beginningOfYear?.end?.toISOString().slice(0, 10)).toBe('2024-03-31');
 
     const beginningOfMonth = parse(state, 'beginning of month');
     expect(beginningOfMonth?.type).toBe('range');
@@ -25,8 +25,8 @@ describe('Fuzzy Ranges Rule', () => {
 
     const middleOfYear = parse(state, 'middle of year');
     expect(middleOfYear?.type).toBe('range');
-    expect(middleOfYear?.start.toISOString().slice(0, 10)).toBe('2024-06-11');
-    expect(middleOfYear?.end?.toISOString().slice(0, 10)).toBe('2024-06-20');
+    expect(middleOfYear?.start.toISOString().slice(0, 10)).toBe('2024-05-01');
+    expect(middleOfYear?.end?.toISOString().slice(0, 10)).toBe('2024-08-31');
 
     const middleOfMonth = parse(state, 'middle of month');
     expect(middleOfMonth?.type).toBe('range');
@@ -40,7 +40,7 @@ describe('Fuzzy Ranges Rule', () => {
 
     const endOfYear = parse(state, 'end of year');
     expect(endOfYear?.type).toBe('range');
-    expect(endOfYear?.start.toISOString().slice(0, 10)).toBe('2024-12-21');
+    expect(endOfYear?.start.toISOString().slice(0, 10)).toBe('2024-09-01');
     expect(endOfYear?.end?.toISOString().slice(0, 10)).toBe('2024-12-31');
 
     const endOfMonth = parse(state, 'end of month');
@@ -53,18 +53,82 @@ describe('Fuzzy Ranges Rule', () => {
     let state = createParserState({ referenceDate });
     state = registerRule(state, fuzzyRangesRule);
 
-    const formats = [
+    // Test beginning/start variations
+    const beginningFormats = [
       'beginning of year',
       'start of year',
       'early year',
-      'the beginning of the year'
+      'the beginning of the year',
+      'beginning of the year',
+      'start of the year',
+      'early in the year'
     ];
 
-    formats.forEach(format => {
+    beginningFormats.forEach(format => {
       const result = parse(state, format);
       expect(result?.type).toBe('range');
       expect(result?.start.toISOString().slice(0, 10)).toBe('2024-01-01');
-      expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-01-10');
+      expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-03-31');
+    });
+
+    // Test middle variations
+    const middleFormats = [
+      'middle of year',
+      'mid year',
+      'mid-year',
+      'the middle of the year',
+      'middle of the year',
+      'mid of year',
+      'mid of the year'
+    ];
+
+    middleFormats.forEach(format => {
+      const result = parse(state, format);
+      expect(result?.type).toBe('range');
+      expect(result?.start.toISOString().slice(0, 10)).toBe('2024-05-01');
+      expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-08-31');
+    });
+
+    // Test end variations
+    const endFormats = [
+      'end of year',
+      'late year',
+      'the end of the year',
+      'end of the year',
+      'late in the year',
+      'year end',
+      'year-end'
+    ];
+
+    endFormats.forEach(format => {
+      const result = parse(state, format);
+      expect(result?.type).toBe('range');
+      expect(result?.start.toISOString().slice(0, 10)).toBe('2024-09-01');
+      expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-12-31');
+    });
+
+    // Test with different periods
+    const periods = ['year', 'month', 'week'];
+    const parts = ['beginning', 'middle', 'end'];
+
+    periods.forEach(period => {
+      parts.forEach(part => {
+        const variations = [
+          `${part} of ${period}`,
+          `the ${part} of the ${period}`,
+          `${part} of the ${period}`,
+          `${part} ${period}`,
+          period === 'year' ? `${part}-${period}` : null,
+          period === 'year' ? `${period}-${part}` : null
+        ].filter(Boolean);
+
+        variations.forEach(format => {
+          const result = parse(state, format!);
+          expect(result?.type).toBe('range');
+          expect(result?.start).toBeTruthy();
+          expect(result?.end).toBeTruthy();
+        });
+      });
     });
   });
 }); 

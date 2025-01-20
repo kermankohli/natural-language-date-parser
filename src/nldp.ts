@@ -1,7 +1,7 @@
 import { DateParsePreferences, ParseResult, RuleModule } from './types/types';
 import { parse, createParserState, registerRule, ParserState } from './parser/parser-engine';
 import { absoluteDatesRule } from './rules/absolute-dates';
-import { dateTimeRule } from './rules/date-time';
+import { dateOnlyRule } from './rules/date-only';
 import { timeOnlyRule } from './rules/time-only';
 import { relativeDaysRule } from './rules/relative-days';
 import { ordinalDaysRule } from './rules/ordinal-days';
@@ -12,7 +12,7 @@ import { fuzzyRangesRule } from './rules/fuzzy-ranges';
 
 const defaultRules = [
   absoluteDatesRule,  // ISO dates, YYYY-MM-DD etc
-  dateTimeRule,       // Date + time combinations
+  dateOnlyRule,       // Date parsing
   timeOnlyRule,       // Time expressions
   relativeDaysRule,   // today, tomorrow, etc
   ordinalDaysRule,    // 1st of March, etc

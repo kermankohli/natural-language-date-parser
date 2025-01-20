@@ -9,8 +9,12 @@ const ORDINALS = {
 };
 
 const MONTHS = {
+  // Full names
   january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
-  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12
+  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
+  // Abbreviations
+  jan: 1, feb: 2, mar: 3, apr: 4, jun: 6, jul: 7, aug: 8,
+  sep: 9, sept: 9, oct: 10, nov: 11, dec: 12
 };
 
 function getOrdinalNumber(ordinal: string): number {
@@ -154,7 +158,7 @@ export const ordinalWeeksRule: RuleModule = {
   patterns: [
     {
       name: 'week-of-month',
-      regex: /^(?:the\s+)?(\d+(?:st|nd|rd|th)?|first|second|third|fourth|fifth|last|second to last|third to last)\s+week\s+(?:of\s+)?(january|february|march|april|may|june|july|august|september|october|november|december)$/i,
+      regex: /^(?:the\s+)?(\d+(?:st|nd|rd|th)?|first|second|third|fourth|fifth|last|second to last|third to last)\s+week\s+(?:of\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)$/i,
       parse: (matches: RegExpMatchArray): IntermediateParse => {
         Logger.debug('Parsing week pattern', { matches: matches.map(m => m) });
         return {

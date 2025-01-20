@@ -95,3 +95,56 @@
 {"timestamp":"2025-01-20T14:18:30.821Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
 {"timestamp":"2025-01-20T14:18:51.750Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
 {"timestamp":"2025-01-20T14:19:59.656Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T14:43:52.581Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T14:46:50.137Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T14:47:31.908Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T14:58:17.853Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T14:58:27.025Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T15:00:04.006Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T15:01:27.196Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T15:01:46.436Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T15:02:43.593Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T15:03:27.646Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T15:05:19.527Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T15:05:19.559Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:05:19.592Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:05:19.593Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:05:19.597Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:05:20.267Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:05:21.910Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:05:21.930Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:05:21.931Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:05:21.932Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:05:47.756Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T15:05:48.521Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:05:48.532Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:05:48.556Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:05:48.557Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:05:48.558Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:05:52.321Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:05:52.340Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:05:52.341Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:05:52.342Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:06:55.168Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:06:55.187Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:06:55.188Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:06:55.189Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:06:57.718Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:06:57.775Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:06:57.777Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:06:57.778Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:06:57.859Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T15:06:58.482Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:07:33.733Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T15:07:33.883Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:07:33.910Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:07:33.915Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:07:33.917Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:07:34.520Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:07:35.171Z","level":"error","message":"Error in rule fuzzy-ranges:","operationId":"no-op-id","context":{"error":{}}}
+{"timestamp":"2025-01-20T15:08:04.743Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T15:09:54.056Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T15:10:27.204Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T15:11:40.418Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T15:12:43.081Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T15:13:11.397Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}

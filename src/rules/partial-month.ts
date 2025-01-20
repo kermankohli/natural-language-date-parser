@@ -2,14 +2,28 @@ import { RuleModule, IntermediateParse, ParseResult, DateParsePreferences } from
 import { Logger } from '../utils/Logger';
 
 const MONTHS = {
-  january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
-  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12
+  january: 1, jan: 1,
+  february: 2, feb: 2,
+  march: 3, mar: 3,
+  april: 4, apr: 4,
+  may: 5,
+  june: 6, jun: 6,
+  july: 7, jul: 7,
+  august: 8, aug: 8,
+  september: 9, sep: 9,
+  october: 10, oct: 10,
+  november: 11, nov: 11,
+  december: 12, dec: 12
 };
 
 const PART_RANGES = {
   early: { start: 1, end: 10 },
+  beginning: { start: 1, end: 10 },
+  start: { start: 1, end: 10 },
   mid: { start: 11, end: 20 },
-  late: { start: 21, end: 31 }
+  middle: { start: 11, end: 20 },
+  late: { start: 21, end: 31 },
+  end: { start: 21, end: 31 }
 };
 
 function getLastDayOfMonth(year: number, month: number): number {
@@ -22,7 +36,7 @@ export const partialMonthRule: RuleModule = {
   patterns: [
     {
       name: 'partial-month',
-      regex: /^(early|mid|late)\s+(january|february|march|april|may|june|july|august|september|october|november|december)$/i,
+      regex: /^(?:the\s+)?(early|mid|late|beginning|middle|end|start)(?:\s+(?:of|in)\s+(?:the\s+)?|\s+)(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)$/i,
       parse: (matches: RegExpMatchArray): IntermediateParse => ({
         type: 'range',
         tokens: [matches[0]],
@@ -41,6 +55,8 @@ export const partialMonthRule: RuleModule = {
     const year = referenceDate.getUTCFullYear();
     const monthNum = MONTHS[month as keyof typeof MONTHS];
     const range = PART_RANGES[part as keyof typeof PART_RANGES];
+
+    if (!monthNum || !range) return null;
 
     Logger.debug('Interpreting partial month', {
       part,
