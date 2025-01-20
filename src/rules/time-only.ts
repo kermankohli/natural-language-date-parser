@@ -1,6 +1,7 @@
-import { RuleModule, IntermediateParse, ParseResult } from '../types/types';
+import { RuleModule, IntermediateParse, ParseResult, DateParsePreferences } from '../types/types';
 import { parseTimeString, timeComponentsToString } from '../utils/time-parser';
 import { Logger } from '../utils/Logger';
+import { DateTime } from 'luxon';
 
 const TIME_PATTERNS = {
   TIME_24H: /^(\d{1,2}):(\d{2})(?::(\d{2}))?(Z|[+-]\d{1,2}(?::?\d{2})?)?$/i,
@@ -90,41 +91,73 @@ export const timeOnlyRule: RuleModule = {
       }
     }
   ],
-  interpret: (intermediate: IntermediateParse, context): ParseResult => {
+  interpret: (intermediate: IntermediateParse, context: DateParsePreferences): ParseResult => {
     const { hours, minutes, seconds, offsetMinutes } = intermediate.captures;
-    const referenceDate = context.referenceDate || new Date();
+    if (!context.referenceDate) return { type: 'single', start: new Date(), confidence: 0, text: '' };
 
     Logger.debug('Interpreting time in time-only rule', {
-      hours, minutes, seconds, offsetMinutes,
-      referenceDate: referenceDate.toISOString(),
+      hours,
+      minutes,
+      seconds,
+      offsetMinutes,
+      referenceDate: context.referenceDate,
       pattern: intermediate.pattern,
-      tokens: intermediate.tokens
+      tokens: intermediate.tokens,
+      timeZone: context.timeZone,
+      context: JSON.stringify(context)
     });
 
-    // Create date using reference date for Y/M/D
-    const date = new Date(Date.UTC(
-      referenceDate.getUTCFullYear(),
-      referenceDate.getUTCMonth(),
-      referenceDate.getUTCDate(),
-      parseInt(hours),
-      parseInt(minutes),
-      parseInt(seconds || '0')
-    ));
+    // Create a DateTime object in the target timezone using the target date
+    const targetDate = DateTime.fromJSDate(context.referenceDate, { zone: context.timeZone || 'UTC' });
+    const dt = DateTime.fromObject(
+      {
+        year: targetDate.year,
+        month: targetDate.month,
+        day: targetDate.day,
+        hour: parseInt(hours),
+        minute: minutes ? parseInt(minutes) : 0,
+        second: seconds ? parseInt(seconds) : 0
+      },
+      { zone: context.timeZone || 'UTC' }
+    );
 
-    Logger.debug('Created UTC date in time-only rule', {
+    Logger.debug('Created DateTime', {
       input: { hours, minutes, seconds },
-      result: date.toISOString()
+      zone: context.timeZone,
+      result: dt.toISO(),
+      offset: dt.offset,
+      isDST: dt.isInDST
     });
 
-    // Apply timezone offset if present
-    const offset = parseInt(offsetMinutes || '0');
-    if (offset !== 0) {
-      date.setMinutes(date.getMinutes() - offset);
+    // If there's an explicit offset in the time string (e.g. "3pm +0200"), apply it
+    if (!context.timeZone && offsetMinutes) {
+      const offset = parseInt(offsetMinutes);
+      const adjustedDt = dt.minus({ minutes: offset });
+      
+      Logger.debug('Applied offset', {
+        offset,
+        result: adjustedDt.toISO()
+      });
+
+      return {
+        type: 'single',
+        start: adjustedDt.toJSDate(),
+        confidence: 1.0,
+        text: intermediate.tokens[0]
+      };
     }
+
+    // Convert to UTC and return
+    const utc = dt.toUTC();
+    Logger.debug('Converted to UTC', {
+      result: utc.toISO(),
+      offset: utc.offset,
+      isDST: utc.isInDST
+    });
 
     return {
       type: 'single',
-      start: date,
+      start: utc.toJSDate(),
       confidence: 1.0,
       text: intermediate.tokens[0]
     };

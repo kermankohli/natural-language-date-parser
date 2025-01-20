@@ -1,5 +1,6 @@
 import { RuleModule, IntermediateParse, ParseResult, DateParsePreferences } from '../types/types';
 import { Logger } from '../utils/Logger';
+import { DateTime } from 'luxon';
 
 const WEEKDAYS = {
   sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
@@ -106,22 +107,23 @@ export const relativeDaysRule: RuleModule = {
     const referenceDate = prefs.referenceDate || new Date();
     
     if (intermediate.pattern === 'next-weekday') {
+      // Create a DateTime in the target timezone
+      const dt = DateTime.fromJSDate(referenceDate, {
+        zone: prefs.timeZone || 'UTC'
+      });
+
       const targetDay = parseInt(intermediate.captures.weekday);
-      const currentDay = referenceDate.getUTCDay();
+      const currentDay = dt.weekday % 7;  // Luxon uses 1-7, we need 0-6
       
       // Calculate days until next occurrence
       let daysToAdd = targetDay - currentDay;
       if (daysToAdd <= 0) daysToAdd += 7;  // If target day has passed this week, go to next week
       
-      const date = new Date(Date.UTC(
-        referenceDate.getUTCFullYear(),
-        referenceDate.getUTCMonth(),
-        referenceDate.getUTCDate() + daysToAdd
-      ));
+      const result = dt.plus({ days: daysToAdd }).startOf('day');
 
       return {
         type: 'single',
-        start: date,
+        start: result.toJSDate(),
         confidence: 1.0,
         text: intermediate.tokens[0]
       };
@@ -129,15 +131,25 @@ export const relativeDaysRule: RuleModule = {
 
     // Handle other patterns
     const offset = parseInt(intermediate.captures.offset);
-    const date = new Date(Date.UTC(
-      referenceDate.getUTCFullYear(),
-      referenceDate.getUTCMonth(),
-      referenceDate.getUTCDate() + offset
-    ));
+    
+    // Create a DateTime in the target timezone
+    const dt = DateTime.fromJSDate(referenceDate, {
+      zone: prefs.timeZone || 'UTC'
+    });
+
+    // Add the offset days and ensure we're at the start of the day
+    const result = dt.plus({ days: offset }).startOf('day');
+
+    Logger.debug('Relative days calculation', {
+      referenceDate: referenceDate.toISOString(),
+      offset,
+      timeZone: prefs.timeZone || 'UTC',
+      result: result.toISO()
+    });
 
     return {
       type: 'single',
-      start: date,
+      start: result.toJSDate(),
       confidence: 1.0,
       text: intermediate.tokens[0]
     };

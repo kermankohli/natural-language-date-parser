@@ -2,14 +2,17 @@ import { DateParsePreferences, ParseResult, RuleModule, IntermediateParse } from
 import { tokenize, TokenizerOptions } from '../tokenizer/tokenizer';
 import { DebugTrace } from '../utils/debug-trace';
 import { Logger } from '../utils/Logger';
+import { PreferenceResolver } from '../resolver/preference-resolver';
 
 export class ParserEngine {
   private rules: RuleModule[] = [];
   private tokenizerOptions: TokenizerOptions = {};
   private defaultPreferences: DateParsePreferences = {};
+  private resolver: PreferenceResolver;
 
   constructor(preferences: DateParsePreferences = {}) {
     this.defaultPreferences = preferences;
+    this.resolver = new PreferenceResolver(preferences);
   }
 
   /**
@@ -24,6 +27,7 @@ export class ParserEngine {
    */
   parse(input: string, preferences: DateParsePreferences = {}): ParseResult | null {
     const mergedPrefs = { ...this.defaultPreferences, ...preferences };
+    this.resolver = new PreferenceResolver(mergedPrefs);
 
     // Regular parsing flow
     const tokens = tokenize(input, this.tokenizerOptions);
@@ -65,10 +69,10 @@ export class ParserEngine {
             if (mergedPrefs.debug) {
               DebugTrace.setFinalResult(result);
             }
-            return {
+            return this.resolver.resolve([{
               ...result,
-              text: input // Include original input text
-            };
+              text: input
+            }]);
           }
         }
       }
@@ -87,20 +91,8 @@ export class ParserEngine {
       const timeResult = this.parse(timePart, mergedPrefs);
       if (!timeResult) return null;
 
-      // Combine the results
-      const combinedDate = new Date(dateResult.start);
-      combinedDate.setUTCHours(
-        timeResult.start.getUTCHours(),
-        timeResult.start.getUTCMinutes(),
-        timeResult.start.getUTCSeconds()
-      );
-
-      return {
-        type: 'single',
-        start: combinedDate,
-        confidence: Math.min(dateResult.confidence, timeResult.confidence),
-        text: input
-      };
+      // Let the resolver combine the results
+      return this.resolver.resolve([dateResult, timeResult]);
     }
 
     if (mergedPrefs.debug) {

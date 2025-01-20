@@ -1,6 +1,7 @@
 import { ParseResult, DateParsePreferences } from '../types/types';
 import { convertToTimeZone, convertFromTimeZone } from '../utils/timezone';
 import { Logger } from '../utils/Logger';
+import { DateTime } from 'luxon';
 
 interface ResolverContext {
   referenceDate: Date;
@@ -29,8 +30,8 @@ export class PreferenceResolver {
   }
 
   private combineResults(results: ParseResult[]): ParseResult {
-    const dateResult = results.find(r => r.type === 'single' && r.start.getFullYear() > 1970);
-    const timeResult = results.find(r => r.type === 'single' && r.start.getFullYear() === 1970);
+    const timeResult = results.find(r => r.type === 'single' && r.text.match(/^(?:at\s+)?\d{1,2}(?:\s*:\s*\d{2})?(?:\s*[ap]m)?$/i));
+    const dateResult = results.find(r => r !== timeResult && r.type === 'single');
 
     Logger.debug('Combining results in preference resolver', {
       dateResult: dateResult?.start.toISOString(),
@@ -44,46 +45,37 @@ export class PreferenceResolver {
     });
 
     if (dateResult && timeResult) {
-      const combinedDate = new Date(dateResult.start);
-      
-      Logger.debug('Combined date initial state', {
-        combinedDate: combinedDate.toISOString(),
-        hours: combinedDate.getHours(),
-        utcHours: combinedDate.getUTCHours(),
-        localString: combinedDate.toString()
+      Logger.debug('Time components before combining', {
+        timeResultHours: timeResult.start.getUTCHours(),
+        timeResultMinutes: timeResult.start.getUTCMinutes(),
+        timeResultSeconds: timeResult.start.getUTCSeconds()
       });
 
-      combinedDate.setHours(
-        timeResult.start.getHours(),
-        timeResult.start.getMinutes(),
-        timeResult.start.getSeconds()
-      );
+      // First get the UTC components from both results
+      const dateUTC = dateResult.start;
+      const timeUTC = timeResult.start;
 
-      Logger.debug('Combined date after setting hours', {
-        combinedDate: combinedDate.toISOString(),
-        hours: combinedDate.getHours(),
-        utcHours: combinedDate.getUTCHours(),
-        localString: combinedDate.toString(),
-        timeResultHours: timeResult.start.getHours(),
-        timeResultMinutes: timeResult.start.getMinutes()
-      });
+      // Create a new date with the date components from dateUTC and time components from timeUTC
+      const combinedDate = new Date(Date.UTC(
+        dateUTC.getUTCFullYear(),
+        dateUTC.getUTCMonth(),
+        dateUTC.getUTCDate(),
+        timeUTC.getUTCHours(),
+        timeUTC.getUTCMinutes(),
+        timeUTC.getUTCSeconds()
+      ));
 
-      // Convert from local time to UTC if timezone specified
-      const finalDate = this.context.timeZone 
-        ? convertFromTimeZone(combinedDate, this.context.timeZone)
-        : combinedDate;
-
-      Logger.debug('Combined date after timezone conversion', {
-        finalDate: finalDate.toISOString(),
-        hours: finalDate.getHours(),
-        utcHours: finalDate.getUTCHours(),
-        localString: finalDate.toString(),
+      Logger.debug('Combined date details', {
+        dateUTC: dateUTC.toISOString(),
+        timeUTC: timeUTC.toISOString(),
+        combinedDateISO: combinedDate.toISOString(),
+        combinedDateLocal: combinedDate.toLocaleString('en-US', { timeZone: this.context.timeZone }),
         timeZone: this.context.timeZone
       });
 
       return {
         type: 'single',
-        start: finalDate,
+        start: combinedDate,
         confidence: Math.min(dateResult.confidence, timeResult.confidence),
         text: `${dateResult.text} ${timeResult.text}`
       };
