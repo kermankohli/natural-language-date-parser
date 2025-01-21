@@ -47,7 +47,7 @@ describe('Ordinal Weeks Rule', () => {
     let state = createParserState({ referenceDate, weekStartsOn: 1 }); // Monday
     state = registerRule(state, ordinalWeeksRule);
 
-    const pattern = state.rules[0].patterns.find(p => p.regex.test('first week of March'));
+    let pattern = state.rules[0].patterns.find(p => p.regex.test('first week of March'));
     const mondayStart = pattern?.parse(pattern.regex.exec('first week of March')!, { referenceDate, weekStartsOn: 1 });
     expect(mondayStart?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-04');
     expect(mondayStart?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-10');
