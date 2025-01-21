@@ -23,7 +23,7 @@ export function resolvePreferences(result: ParseResult, preferences: DateParsePr
       minute: timeResult.start.minute,
       second: timeResult.start.second,
       millisecond: timeResult.start.millisecond
-    });
+    }).toUTC();
   }
 
   if (context.timeZone) {
