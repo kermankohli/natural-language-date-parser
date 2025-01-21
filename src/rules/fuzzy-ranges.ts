@@ -1,15 +1,16 @@
-import { RuleModule, IntermediateParse, ParseResult, DateParsePreferences } from '../types/types';
+import { RuleModule, ParseResult, DateParsePreferences, Pattern } from '../types/types';
 import { Logger } from '../utils/Logger';
+import { DateTime } from 'luxon';
 
 const MONTHS = {
   january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
   july: 7, august: 8, september: 9, october: 10, november: 11, december: 12
 };
 
-function getWeekendRange(referenceDate: Date, offset: number): { start: Date, end: Date } {
+function getWeekendRange(referenceDate: DateTime, offset: number): { start: DateTime, end: DateTime } {
   // Find next Saturday
-  const start = new Date(referenceDate);
-  const currentDay = start.getUTCDay();
+  const start = referenceDate.startOf('day');
+  const currentDay = start.weekday % 7;
   
   // Calculate days until next Saturday
   let daysToSaturday = (6 - currentDay) % 7;
@@ -18,100 +19,92 @@ function getWeekendRange(referenceDate: Date, offset: number): { start: Date, en
   }
   daysToSaturday += offset * 7;
   
-  start.setUTCDate(start.getUTCDate() + daysToSaturday);
-  start.setUTCHours(0, 0, 0, 0);
-  
-  // End is Sunday
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + 1);
-  end.setUTCHours(23, 59, 59, 999);
+  const weekendStart = start.plus({ days: daysToSaturday });
+  const weekendEnd = weekendStart.plus({ days: 1 }).endOf('day');
   
   Logger.debug('Interpreting weekend', {
-    referenceDate: referenceDate.toISOString(),
+    referenceDate: referenceDate.toISO(),
     offset,
-    start: start.toISOString(),
-    end: end.toISOString()
+    start: weekendStart.toISO(),
+    end: weekendEnd.toISO()
   });
   
+  return { start: weekendStart, end: weekendEnd };
+}
+
+function getHalfMonthRange(year: number, month: number, isSecondHalf: boolean): { start: DateTime, end: DateTime } {
+  const start = DateTime.utc(year, month, isSecondHalf ? 16 : 1);
+  const lastDay = DateTime.utc(year, month + 1, 1).minus({ days: 1 }).day;
+  const end = DateTime.utc(year, month, isSecondHalf ? lastDay : 15).endOf('day');
   return { start, end };
 }
 
-function getHalfMonthRange(year: number, month: number, isSecondHalf: boolean): { start: Date, end: Date } {
-  const start = new Date(Date.UTC(year, month - 1, isSecondHalf ? 16 : 1));
-  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const end = new Date(Date.UTC(year, month - 1, isSecondHalf ? lastDay : 15, 23, 59, 59, 999));
-  return { start, end };
-}
-
-function getMultipleWeekendRange(referenceDate: Date, offset: number, count: number): { start: Date, end: Date } {
+function getMultipleWeekendRange(referenceDate: DateTime, offset: number, count: number): { start: DateTime, end: DateTime } {
   // Get first weekend
   const { start } = getWeekendRange(referenceDate, offset);
   
   // Get last weekend by adding (count-1) weeks to first weekend
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + ((count - 1) * 7) + 1);  // +1 for Sunday
-  end.setUTCHours(23, 59, 59, 999);
+  const end = start.plus({ weeks: count - 1, days: 1 }).endOf('day');
   
   return { start, end };
 }
 
-function getPeriodRange(part: string, period: string, referenceDate: Date): { start: Date; end: Date } {
-  const year = referenceDate.getUTCFullYear();
-  const month = referenceDate.getUTCMonth();
+function getPeriodRange(part: string, period: string, referenceDate: DateTime): { start: DateTime; end: DateTime } {
+  const year = referenceDate.year;
+  const month = referenceDate.month;
 
   if (period === 'year') {
     if (part === 'beginning') {
       return {
-        start: new Date(Date.UTC(year, 0, 1)),
-        end: new Date(Date.UTC(year, 2, 31))
+        start: DateTime.utc(year, 1, 1),
+        end: DateTime.utc(year, 3, 31).endOf('day')
       };
     } else if (part === 'middle') {
       return {
-        start: new Date(Date.UTC(year, 4, 1)),
-        end: new Date(Date.UTC(year, 7, 31))
+        start: DateTime.utc(year, 5, 1),
+        end: DateTime.utc(year, 8, 31).endOf('day')
       };
     } else { // end
       return {
-        start: new Date(Date.UTC(year, 8, 1)),
-        end: new Date(Date.UTC(year, 11, 31))
+        start: DateTime.utc(year, 9, 1),
+        end: DateTime.utc(year, 12, 31).endOf('day')
       };
     }
   } else if (period === 'month') {
-    const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+    const daysInMonth = DateTime.utc(year, month + 1, 1).minus({ days: 1 }).day;
     if (part === 'beginning') {
       return {
-        start: new Date(Date.UTC(year, month, 1)),
-        end: new Date(Date.UTC(year, month, 10))
+        start: DateTime.utc(year, month, 1),
+        end: DateTime.utc(year, month, 10).endOf('day')
       };
     } else if (part === 'middle') {
       return {
-        start: new Date(Date.UTC(year, month, 11)),
-        end: new Date(Date.UTC(year, month, 20))
+        start: DateTime.utc(year, month, 11),
+        end: DateTime.utc(year, month, 20).endOf('day')
       };
     } else { // end
       return {
-        start: new Date(Date.UTC(year, month, 21)),
-        end: new Date(Date.UTC(year, month, daysInMonth))
+        start: DateTime.utc(year, month, 21),
+        end: DateTime.utc(year, month, daysInMonth).endOf('day')
       };
     }
   } else { // week
-    const dayOfWeek = referenceDate.getUTCDay();
-    const startOfWeek = new Date(Date.UTC(year, month, referenceDate.getUTCDate() - dayOfWeek));
-    const endOfWeek = new Date(Date.UTC(year, month, referenceDate.getUTCDate() + (6 - dayOfWeek)));
+    const startOfWeek = referenceDate.startOf('week');
+    const endOfWeek = startOfWeek.endOf('week');
 
     if (part === 'beginning') {
       return {
         start: startOfWeek,
-        end: new Date(Date.UTC(startOfWeek.getUTCFullYear(), startOfWeek.getUTCMonth(), startOfWeek.getUTCDate() + 2))
+        end: startOfWeek.plus({ days: 2 }).endOf('day')
       };
     } else if (part === 'middle') {
       return {
-        start: new Date(Date.UTC(startOfWeek.getUTCFullYear(), startOfWeek.getUTCMonth(), startOfWeek.getUTCDate() + 2)),
-        end: new Date(Date.UTC(startOfWeek.getUTCFullYear(), startOfWeek.getUTCMonth(), startOfWeek.getUTCDate() + 4))
+        start: startOfWeek.plus({ days: 2 }),
+        end: startOfWeek.plus({ days: 4 }).endOf('day')
       };
     } else { // end
       return {
-        start: new Date(Date.UTC(startOfWeek.getUTCFullYear(), startOfWeek.getUTCMonth(), startOfWeek.getUTCDate() + 4)),
+        start: startOfWeek.plus({ days: 4 }),
         end: endOfWeek
       };
     }
@@ -122,255 +115,155 @@ export const fuzzyRangesRule: RuleModule = {
   name: 'fuzzy-ranges',
   patterns: [
     {
-      // "next weekend", "this weekend"
-      name: 'weekend',
       regex: /^(this|next|the following)\s+weekend$/i,
-      parse: (matches: RegExpMatchArray): IntermediateParse => ({
-        type: 'range',
-        tokens: [matches[0]],
-        pattern: 'weekend',
-        captures: {
-          offset: matches[1].toLowerCase() === 'next' || 
-                 matches[1].toLowerCase() === 'the following' ? '1' : '0'
-        }
-      })
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+        const offset = matches[1].toLowerCase() === 'next' || 
+                      matches[1].toLowerCase() === 'the following' ? 1 : 0;
+        const { start, end } = getWeekendRange(preferences.referenceDate || DateTime.now(), offset);
+        return {
+          type: 'range',
+          start,
+          end,
+          confidence: 1.0,
+          text: matches[0]
+        };
+      }
     },
     {
-      // "first half of April", "second half of April"
-      name: 'half-month',
       regex: /^(first|second)\s+half\s+(?:of\s+)?(january|february|march|april|may|june|july|august|september|october|november|december)$/i,
-      parse: (matches: RegExpMatchArray): IntermediateParse => ({
-        type: 'range',
-        tokens: [matches[0]],
-        pattern: 'half-month',
-        captures: {
-          half: matches[1].toLowerCase(),
-          month: matches[2].toLowerCase()
-        }
-      })
-    },
-    {
-      // "beginning of year", "middle of month", "end of week"
-      name: 'period-part',
-      regex: /^(?:the\s+)?(beginning|middle|mid|end|start|early|late)(?:\s+(?:of|in)\s+(?:the\s+)?|\s+|\-)(year|month|week)(?:\s+end)?$|^(year|month|week)[-\s](beginning|middle|mid|end|start|early|late)$/i,
-      parse: (matches: RegExpMatchArray, preferences: DateParsePreferences): IntermediateParse | null => {
-        const [fullMatch, part1, period1, period2, part2] = matches;
-        let part = part1 || part2;
-        let period = period1 || period2;
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+        const [, half, month] = matches;
+        const monthNum = MONTHS[month.toLowerCase() as keyof typeof MONTHS];
+        if (!monthNum) return null;
 
-        // Handle null matches
-        if (!part || !period) return null;
-
-        // Normalize parts
-        let normalizedPart = part.toLowerCase();
-        if (normalizedPart === 'start' || normalizedPart === 'early') normalizedPart = 'beginning';
-        if (normalizedPart === 'mid') normalizedPart = 'middle';
-        if (normalizedPart === 'late') normalizedPart = 'end';
-
-        const { start, end } = getPeriodRange(normalizedPart, period.toLowerCase(), preferences.referenceDate || new Date());
+        const year = preferences.referenceDate?.year || DateTime.now().year;
+        const { start, end } = getHalfMonthRange(year, monthNum, half.toLowerCase() === 'second');
         
         return {
           type: 'range',
           start,
           end,
-          text: fullMatch,
           confidence: 1.0,
-          pattern: 'period-part',
-          captures: {
-            part: normalizedPart,
-            period: period.toLowerCase()
-          }
+          text: matches[0]
         };
       }
     },
     {
-      // "first 3 days of next month"
-      name: 'days-of-month',
+      regex: /^(?:the\s+)?(beginning|middle|mid|end|start|early|late)(?:\s+(?:of|in)\s+(?:the\s+)?|\s+|\-)(year|month|week)(?:\s+end)?$|^(year|month|week)[-\s](beginning|middle|mid|end|start|early|late)$/i,
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+        const [fullMatch, part1, period1, period2, part2] = matches;
+        let part = part1 || part2;
+        let period = period1 || period2;
+
+        if (!part || !period) return null;
+
+        let normalizedPart = part.toLowerCase();
+        if (normalizedPart === 'start' || normalizedPart === 'early') normalizedPart = 'beginning';
+        if (normalizedPart === 'mid') normalizedPart = 'middle';
+        if (normalizedPart === 'late') normalizedPart = 'end';
+
+        const { start, end } = getPeriodRange(normalizedPart, period.toLowerCase(), preferences.referenceDate || DateTime.now());
+        
+        return {
+          type: 'range',
+          start,
+          end,
+          confidence: 1.0,
+          text: fullMatch
+        };
+      }
+    },
+    {
       regex: /^(first|last)\s+(\d+)\s+days\s+(?:of\s+)?(next\s+month|(?:january|february|march|april|may|june|july|august|september|october|november|december))$/i,
-      parse: (matches: RegExpMatchArray): IntermediateParse => ({
-        type: 'range',
-        tokens: [matches[0]],
-        pattern: 'days-of-month',
-        captures: {
-          position: matches[1].toLowerCase(),
-          count: matches[2],
-          month: matches[3].toLowerCase()
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+        const [, position, count, month] = matches;
+        if (!position || !count || !month) return null;
+
+        const numDays = parseInt(count, 10);
+        if (isNaN(numDays)) return null;
+
+        const referenceDate = preferences.referenceDate || DateTime.now();
+        let targetMonth: number;
+        let targetYear = referenceDate.year;
+
+        if (month === 'next month') {
+          targetMonth = referenceDate.month + 1;
+          if (targetMonth > 12) {
+            targetMonth = 1;
+            targetYear++;
+          }
+        } else {
+          targetMonth = MONTHS[month.toLowerCase() as keyof typeof MONTHS];
+          if (!targetMonth) return null;
         }
-      })
+
+        const monthStart = DateTime.utc(targetYear, targetMonth, 1);
+        const monthEnd = monthStart.endOf('month');
+
+        let start: DateTime, end: DateTime;
+        if (position === 'first') {
+          start = monthStart;
+          end = monthStart.plus({ days: numDays - 1 }).endOf('day');
+        } else {
+          start = monthEnd.minus({ days: numDays - 1 }).startOf('day');
+          end = monthEnd;
+        }
+
+        return {
+          type: 'range',
+          start,
+          end,
+          confidence: 1.0,
+          text: matches[0]
+        };
+      }
     },
     {
-      // "beginning of April", "end of March"
-      name: 'month-parts',
       regex: /^(beginning|end)\s+(?:of\s+)?(january|february|march|april|may|june|july|august|september|october|november|december)$/i,
-      parse: (matches: RegExpMatchArray): IntermediateParse => ({
-        type: 'range',
-        tokens: [matches[0]],
-        pattern: 'month-parts',
-        captures: {
-          part: matches[1].toLowerCase(),
-          month: matches[2].toLowerCase()
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+        const [, part, month] = matches;
+        if (!part || !month) return null;
+
+        const monthNum = MONTHS[month.toLowerCase() as keyof typeof MONTHS];
+        if (!monthNum) return null;
+
+        const year = preferences.referenceDate?.year || DateTime.now().year;
+        const monthStart = DateTime.utc(year, monthNum, 1);
+
+        let start: DateTime, end: DateTime;
+        if (part === 'beginning') {
+          start = monthStart;
+          end = monthStart.plus({ days: 4 }).endOf('day');
+        } else {
+          const monthEnd = monthStart.endOf('month');
+          start = monthEnd.minus({ days: 4 }).startOf('day');
+          end = monthEnd;
         }
-      })
+
+        return {
+          type: 'range',
+          start,
+          end,
+          confidence: 1.0,
+          text: matches[0]
+        };
+      }
     },
     {
-      // "next 2 weekends", "following 3 weekends"
-      name: 'multiple-weekends',
       regex: /^(?:next|following)\s+(\d+)\s+weekends$/i,
-      parse: (matches: RegExpMatchArray): IntermediateParse => ({
-        type: 'range',
-        tokens: [matches[0]],
-        pattern: 'multiple-weekends',
-        captures: {
-          count: matches[1],
-          offset: '1'  // Always start from next weekend
-        }
-      })
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+        const count = parseInt(matches[1], 10);
+        if (isNaN(count)) return null;
+
+        const { start, end } = getMultipleWeekendRange(preferences.referenceDate || DateTime.now(), 1, count);
+        return {
+          type: 'range',
+          start,
+          end,
+          confidence: 1.0,
+          text: matches[0]
+        };
+      }
     }
-  ],
-  interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult | null => {
-    if (intermediate.pattern?.includes('offset')) {
-      const offset = parseInt(intermediate.captures?.offset || '0');
-      if (isNaN(offset)) return null;
-      const { start, end } = getWeekendRange(prefs.referenceDate || new Date(), offset);
-      return {
-        type: 'range',
-        start,
-        end,
-        confidence: 1.0,
-        text: intermediate.tokens?.[0] || intermediate.text || ''
-      };
-    } else if (intermediate.pattern === 'half-month') {
-      const { half, month } = intermediate.captures || {};
-      if (!half || !month) return null;
-      const monthNum = MONTHS[month as keyof typeof MONTHS];
-      const year = prefs.referenceDate?.getUTCFullYear() || new Date().getUTCFullYear();
-      
-      // Get last day of month
-      const lastDay = new Date(Date.UTC(year, monthNum, 0)).getUTCDate();
-      const midPoint = Math.floor(lastDay / 2);
-      
-      const start = new Date(Date.UTC(year, monthNum - 1, half === 'first' ? 1 : midPoint + 1));
-      const end = new Date(Date.UTC(year, monthNum - 1, half === 'first' ? midPoint : lastDay));
-      end.setUTCHours(23, 59, 59, 999);
-      
-      return {
-        type: 'range',
-        start,
-        end,
-        confidence: 1.0,
-        text: intermediate.tokens?.[0] || intermediate.text || ''
-      };
-    } else if (intermediate.pattern === 'period-part') {
-      const { part, period } = intermediate.captures || {};
-      if (!part || !period) return null;
-
-      // Only accept valid periods
-      if (!['year', 'month', 'week'].includes(period)) return null;
-
-      const { start, end } = getPeriodRange(part, period, prefs.referenceDate || new Date());
-      
-      return {
-        type: 'range',
-        start,
-        end,
-        confidence: 1.0,
-        text: intermediate.tokens?.[0] || intermediate.text || ''
-      };
-    } else if (intermediate.pattern === 'days-of-month') {
-      const { position, count, month } = intermediate.captures || {};
-      if (!position || !count || !month) return null;
-      let year = prefs.referenceDate?.getUTCFullYear() || new Date().getUTCFullYear();
-      let monthNum = month === 'next month' 
-        ? (prefs.referenceDate?.getUTCMonth() ?? new Date().getUTCMonth()) + 2 
-        : MONTHS[month as keyof typeof MONTHS];
-      
-      // Handle year rollover
-      if (monthNum > 12) {
-        monthNum = 1;
-        year++;
-      }
-
-      const numDays = parseInt(count, 10);
-      
-      let startDate: Date;
-      let endDate: Date;
-      
-      if (position === 'first') {
-        startDate = new Date(Date.UTC(year, monthNum - 1, 1));
-        endDate = new Date(Date.UTC(year, monthNum - 1, numDays));
-      } else if (position === 'last') {
-        const lastDay = new Date(Date.UTC(year, monthNum, 0)).getUTCDate();
-        startDate = new Date(Date.UTC(year, monthNum - 1, lastDay - numDays + 1));
-        endDate = new Date(Date.UTC(year, monthNum - 1, lastDay));
-      } else {
-        throw new Error('Invalid position');
-      }
-      
-      endDate.setUTCHours(23, 59, 59, 999);
-
-      Logger.debug('Interpreting days of month', {
-        position,
-        count,
-        month,
-        year,
-        monthNum,
-        start: startDate.toISOString(),
-        end: endDate.toISOString()
-      });
-
-      return {
-        type: 'range',
-        start: startDate,
-        end: endDate,
-        confidence: 1.0,
-        text: intermediate.tokens?.[0] || intermediate.text || ''
-      };
-    } else if (intermediate.pattern === 'month-parts') {
-      const { part, month } = intermediate.captures || {};
-      if (!part || !month) return null;
-      const year = prefs.referenceDate?.getUTCFullYear() || new Date().getUTCFullYear();
-      const monthNum = MONTHS[month as keyof typeof MONTHS];
-      
-      let startDate: Date;
-      let endDate: Date;
-      
-      if (part === 'beginning') {
-        startDate = new Date(Date.UTC(year, monthNum - 1, 1));
-        endDate = new Date(Date.UTC(year, monthNum - 1, 5, 23, 59, 59, 999));
-      } else {
-        const lastDay = new Date(Date.UTC(year, monthNum, 0)).getUTCDate();
-        startDate = new Date(Date.UTC(year, monthNum - 1, lastDay - 5));
-        endDate = new Date(Date.UTC(year, monthNum - 1, lastDay, 23, 59, 59, 999));
-      }
-      
-      Logger.debug('Interpreting month parts', {
-        part,
-        month,
-        year,
-        monthNum,
-        start: startDate.toISOString(),
-        end: endDate.toISOString()
-      });
-
-      return {
-        type: 'range',
-        start: startDate,
-        end: endDate,
-        confidence: 1.0,
-        text: intermediate.tokens?.[0] || intermediate.text || ''
-      };
-    } else if (intermediate.pattern === 'multiple-weekends') {
-      const offset = parseInt(intermediate.captures?.offset || '0');
-      const count = parseInt(intermediate.captures?.count || '0');
-      if (isNaN(offset) || isNaN(count)) return null;
-      return {
-        type: 'range',
-        ...getMultipleWeekendRange(prefs.referenceDate || new Date(), offset, count),
-        confidence: 1.0,
-        text: intermediate.tokens?.[0] || intermediate.text || ''
-      };
-    }
-    
-    throw new Error('Unknown pattern');
-  }
+  ]
 }; 

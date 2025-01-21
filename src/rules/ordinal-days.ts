@@ -1,6 +1,7 @@
 import { RuleModule, IntermediateParse, ParseResult, DateParsePreferences } from '../types/types';
 import { Logger } from '../utils/Logger';
 import { getOrdinalNumber } from '../utils/ordinal-utils';
+import { DateTime } from 'luxon';
 
 const ORDINALS = {
   first: 1, second: 2, third: 3, fourth: 4, fifth: 5,
@@ -8,20 +9,20 @@ const ORDINALS = {
   'second to last': -2, 'third to last': -3
 };
 
-const MONTHS = {
-  'january': 1, 'jan': 1,
-  'february': 2, 'feb': 2,
-  'march': 3, 'mar': 3,
-  'april': 4, 'apr': 4,
-  'may': 5,
-  'june': 6, 'jun': 6,
-  'july': 7, 'jul': 7,
-  'august': 8, 'aug': 8,
-  'september': 9, 'sep': 9, 'sept': 9,
-  'october': 10, 'oct': 10,
-  'november': 11, 'nov': 11,
-  'december': 12, 'dec': 12
-};
+const MONTHS_ARRAY = [
+  'january', 'jan',
+  'february', 'feb',
+  'march', 'mar',
+  'april', 'apr',
+  'may',
+  'june', 'jun',
+  'july', 'jul',
+  'august', 'aug',
+  'september', 'sep',
+  'october', 'oct',
+  'november', 'nov',
+  'december', 'dec'
+];
 
 const DAYS = {
   sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
@@ -126,86 +127,71 @@ export const ordinalDaysRule: RuleModule = {
   name: 'ordinal-days',
   patterns: [
     {
-      name: 'nth-weekday-in-month',
-      regex: /^(first|1st|second|2nd|third|3rd|fourth|4th|fifth|5th|last)\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat)\s+(?:in|of)\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)$/i,
-      parse: (matches: RegExpMatchArray): IntermediateParse => {
-        const ordinal = matches[1].toLowerCase();
-        const weekday = matches[2].toLowerCase();
-        const month = matches[3].toLowerCase();
-        
-        let n: number;
-        if (ordinal === 'last') {
-          n = -1;
-        } else {
-          const parsed = parseInt(ordinal);
-          if (!isNaN(parsed)) {
-            n = parsed;
-          } else {
-            n = {
-              'first': 1, 'second': 2, 'third': 3, 'fourth': 4, 'fifth': 5
-            }[ordinal] || 1; // Default to 1 if not found
-          }
-        }
-        
+      regex: /^(first|second|third|fourth|fifth|last|second\s+to\s+last|third\s+to\s+last|fourth\s+to\s+last|fifth\s+to\s+last)\s+(?:day\s+(?:of\s+)?)?(?:the\s+)?(?:month\s+(?:of\s+)?)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)$/i,
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+        const [, ordinal, month] = matches;
+        const ordinalNum = getOrdinalNumber(ordinal);
+        if (!ordinalNum) return null;
+
+        const monthNum = MONTHS_ARRAY.indexOf(month.toLowerCase()) + 1;
+        if (!monthNum) return null;
+
+        const referenceYear = preferences.referenceDate?.toUTC().year || new Date().getUTCFullYear();
+        const targetYear = referenceYear;
+
+        const result = DateTime.utc(targetYear, monthNum, Math.abs(ordinalNum));
+
         return {
-          type: 'ordinal',
-          tokens: [matches[0]],
-          pattern: 'nth-weekday-in-month',
-          captures: {
-            n: n.toString(),
-            weekday,
-            month
-          }
+          type: 'single',
+          start: result,
+          confidence: 1.0,
+          text: matches[0]
         };
       }
     },
     {
-      name: 'end-of-month',
-      regex: /^(?:the\s+)?(last|penultimate|ultimate|second to last|third to last)\s+day\s+(?:of\s+)?(?:the\s+)?(?:month|(?:january|february|march|april|may|june|july|august|september|october|november|december))$/i,
-      parse: (matches: RegExpMatchArray): IntermediateParse => {
-        const monthMatch = matches[0].match(/(?:january|february|march|april|may|june|july|august|september|october|november|december)$/i);
-        return {
-          type: 'ordinal',
-          tokens: [matches[0]],
-          pattern: 'end-of-month',
-          captures: {
-            ordinal: matches[1].toLowerCase(),
-            month: monthMatch?.[0].toLowerCase() ?? 'month'  // Default to 'month' if no specific month
-          }
-        };
-      }
-    },
-    {
-      name: 'nth-of-month',
-      regex: /^(?:the\s+)?(\d+)(?:st|nd|rd|th)?\s+(?:of\s+)?(?:day\s+of\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)$/i,
-      parse: (matches: RegExpMatchArray): IntermediateParse => {
-        Logger.debug('Parsing nth of month', { matches: matches.map(m => m) });
+      regex: /^(\d+)(?:st|nd|rd|th)\s+(?:day\s+(?:of\s+)?)?(?:the\s+)?(?:month\s+(?:of\s+)?)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)$/i,
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
         const [, day, month] = matches;
+        const dayNum = parseInt(day, 10);
+        if (isNaN(dayNum)) return null;
+
+        const monthNum = MONTHS_ARRAY.indexOf(month.toLowerCase()) + 1;
+        if (!monthNum) return null;
+
+        const referenceYear = preferences.referenceDate?.toUTC().year || new Date().getUTCFullYear();
+        const targetYear = referenceYear;
+
+        const result = DateTime.utc(targetYear, monthNum, dayNum);
+
         return {
-          type: 'ordinal',
-          tokens: [matches[0]],
-          pattern: 'nth-of-month',
-          captures: {
-            day,
-            month: month.toLowerCase()
-          }
+          type: 'single',
+          start: result,
+          confidence: 1.0,
+          text: matches[0]
         };
       }
     },
     {
-      name: 'month-nth',
       regex: /^(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+(?:the\s+)?(\d+)(?:st|nd|rd|th)?$/i,
-      parse: (matches: RegExpMatchArray): IntermediateParse => {
-        Logger.debug('Parsing month nth', { matches: matches.map(m => m) });
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
         const [, month, day] = matches;
+        const dayNum = parseInt(day, 10);
+        if (isNaN(dayNum)) return null;
+
+        const monthNum = MONTHS_ARRAY.indexOf(month.toLowerCase()) + 1;
+        if (!monthNum) return null;
+
+        const referenceYear = preferences.referenceDate?.toUTC().year || new Date().getUTCFullYear();
+        const targetYear = referenceYear;
+
+        const result = DateTime.utc(targetYear, monthNum, dayNum);
+
         return {
-          type: 'ordinal',
-          tokens: [matches[0]],
-          pattern: 'month-nth',
-          captures: {
-            day,
-            month: month.toLowerCase()
-          }
+          type: 'single',
+          start: result,
+          confidence: 1.0,
+          text: matches[0]
         };
       }
     }
@@ -220,11 +206,11 @@ export const ordinalDaysRule: RuleModule = {
     if (isNaN(dayNum)) return null;
 
     // Map abbreviated month names to full names using MONTHS object
-    const monthNum = MONTHS[month.toLowerCase() as keyof typeof MONTHS];
+    const monthNum = MONTHS_ARRAY.indexOf(month.toLowerCase()) + 1;
     if (!monthNum) return null;
 
     // Use the reference date's year for validation
-    const referenceYear = prefs.referenceDate?.getUTCFullYear() || new Date().getUTCFullYear();
+    const referenceYear = prefs.referenceDate?.toUTC().year || new Date().getUTCFullYear();
     const targetYear = referenceYear;
 
     // For February, check if it's a leap year when day is 29
@@ -255,7 +241,7 @@ export const ordinalDaysRule: RuleModule = {
     });
 
     // Create the date
-    const result = new Date(Date.UTC(targetYear, monthNum - 1, dayNum));
+    const result = DateTime.utc(targetYear, monthNum - 1, dayNum);
 
     return {
       type: 'single',
@@ -264,4 +250,28 @@ export const ordinalDaysRule: RuleModule = {
       text: intermediate.tokens?.[0] || intermediate.text || ''
     };
   }
-}; 
+};
+
+export function parseOrdinalDay(matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null {
+  const [_, ordinal, month] = matches;
+  const ordinalNum = parseInt(ordinal);
+  const monthNum = Math.floor(MONTHS_ARRAY.indexOf(month.toLowerCase()) / 2) + 1;
+
+  if (ordinalNum < 1 || ordinalNum > 31 || monthNum < 1) {
+    return null;
+  }
+
+  const year = preferences.referenceDate?.year || DateTime.now().year;
+  const start = DateTime.utc(year, monthNum, ordinalNum);
+
+  if (!start.isValid) {
+    return null;
+  }
+
+  return {
+    type: 'single',
+    start,
+    confidence: 1,
+    text: matches[0]
+  };
+} 

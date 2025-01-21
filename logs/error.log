@@ -148,3 +148,5 @@
 {"timestamp":"2025-01-20T15:11:40.418Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
 {"timestamp":"2025-01-20T15:12:43.081Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
 {"timestamp":"2025-01-20T15:13:11.397Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T23:20:29.062Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}
+{"timestamp":"2025-01-20T23:21:15.620Z","level":"error","message":"Error converting from timezone:","operationId":"no-op-id","context":{"error":"Invalid time zone specified: Invalid/Timezone"}}

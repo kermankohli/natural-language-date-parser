@@ -1,226 +1,115 @@
-import { RuleModule, IntermediateParse, ParseResult, DateParsePreferences } from '../types/types';
+import { RuleModule, ParseResult, DateParsePreferences, Pattern } from '../types/types';
 import { Logger } from '../utils/Logger';
-
-type WeekStartDay = DateParsePreferences['weekStartsOn'];
-
-const ORDINALS = {
-  first: 1, second: 2, third: 3, fourth: 4, fifth: 5,
-  last: -1, 'second to last': -2, 'third to last': -3
-};
+import { DateTime } from 'luxon';
 
 const MONTHS = {
-  // Full names
   january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
-  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
-  // Abbreviations
-  jan: 1, feb: 2, mar: 3, apr: 4, jun: 6, jul: 7, aug: 8,
-  sep: 9, sept: 9, oct: 10, nov: 11, dec: 12
+  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12
 };
 
-function getOrdinalNumber(ordinal: string): number {
-  // Handle numeric ordinals like "2nd", "3rd", etc.
-  const numericMatch = ordinal.match(/^(\d+)(?:st|nd|rd|th)?$/i);
-  if (numericMatch) {
-    Logger.debug('Parsing numeric ordinal', {
-      ordinal,
-      match: numericMatch[1],
-      result: parseInt(numericMatch[1], 10)
-    });
-    return parseInt(numericMatch[1], 10);
-  }
+function getWeekRange(date: DateTime, weekStartsOn: number = 1): { start: DateTime; end: DateTime } {
+  const weekday = date.weekday % 7;
+  const daysToSubtract = (weekday - weekStartsOn + 7) % 7;
   
-  const result = ORDINALS[ordinal as keyof typeof ORDINALS] || 0;
-  Logger.debug('Parsing word ordinal', {
-    ordinal,
-    result
-  });
-  return result;
-}
-
-function findNthWeekStart(year: number, month: number, n: number, weekStartDay: NonNullable<WeekStartDay>): Date | null {
-  const firstDay = new Date(Date.UTC(year, month - 1, 1));
-  const currentDay = firstDay.getUTCDay();
+  const start = date.minus({ days: daysToSubtract }).startOf('day');
+  const end = start.plus({ days: 6 }).endOf('day');
   
-  Logger.debug('Initial state', {
-    date: firstDay.toISOString(),
-    currentDay,
-    weekStartDay,
-    dayNames: {
-      currentDay: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][currentDay],
-      weekStart: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][weekStartDay],
-    }
-  });
-
-  // Calculate days to adjust
-  const daysToAdjust = weekStartDay === 0
-    ? (currentDay === 0 ? 0 : ((7 - currentDay) % 7))
-    : ((weekStartDay - currentDay + 7) % 7);
-
-  Logger.debug('Days calculation', {
-    formula: weekStartDay === 0 
-      ? `(7 - ${currentDay}) % 7`
-      : `(${weekStartDay} - ${currentDay} + 7) % 7`,
-    steps: {
-      beforeModulo: weekStartDay === 0 ? (7 - currentDay) : (weekStartDay - currentDay + 7),
-      afterModulo: daysToAdjust
-    },
-    targetDate: new Date(firstDay.getTime() + daysToAdjust * 24 * 60 * 60 * 1000).toISOString()
-  });
-
-  // Get to first week start
-  const firstWeekStart = new Date(firstDay);
-  const currentDate = firstWeekStart.getUTCDate();
-  firstWeekStart.setUTCDate(currentDate + daysToAdjust);
-  
-  Logger.debug('Date adjustment details', {
-    currentDate,
-    daysToAdjust,
-    newDate: currentDate + daysToAdjust,
-    resultingDate: firstWeekStart.toISOString()
-  });
-
-  // Add weeks to get to nth week
-  const result = new Date(firstWeekStart);
-  const weeksToAdd = (n - 1) * 7;
-  result.setUTCDate(result.getUTCDate() + weeksToAdd);
-  
-  Logger.debug('Week calculation steps', {
-    firstWeekStart: firstWeekStart.toISOString(),
-    weeksToAdd,
-    finalDate: result.toISOString(),
-    inMonth: result.getUTCMonth() === month - 1
-  });
-
-  return result.getUTCMonth() === month - 1 ? result : null;
-}
-
-function findNthWeekFromEnd(year: number, month: number, n: number, weekStartDay: NonNullable<WeekStartDay>): Date | null {
-  const lastDay = new Date(Date.UTC(year, month, 0));
-  const currentDay = lastDay.getUTCDay();
-  
-  // For Sunday start:
-  // - Always go back one week if we're on the last day
-  // - Then find previous week start
-  const daysToSubtract = weekStartDay === 0
-    ? (currentDay === 0 ? 7 : currentDay)  // Go back a week if Sunday
-    : ((currentDay - weekStartDay + 7) % 7);
-
-  Logger.debug('Finding last week start (detailed)', {
-    inputs: {
-      year,
-      month,
-      n,
-      weekStartDay
-    },
-    lastDayCalc: {
-      lastDay: lastDay.toISOString(),
-      currentDay,
-      formula: weekStartDay === 0 
-        ? `currentDay === 0 ? ${7} : ${currentDay}`
-        : `((${currentDay} - ${weekStartDay} + 7) % 7)`,
-      daysToSubtract
-    }
-  });
-
-  // Get to last week start
-  const lastWeekStart = new Date(lastDay);
-  lastWeekStart.setUTCDate(lastWeekStart.getUTCDate() - daysToSubtract);
-  
-  // Subtract weeks to get to nth from last week
-  const result = new Date(lastWeekStart);
-  const weeksToSubtract = (Math.abs(n) - 1) * 7;
-  result.setUTCDate(result.getUTCDate() - weeksToSubtract);
-  
-  Logger.debug('Week calculation steps (from end)', {
-    lastWeekStart: lastWeekStart.toISOString(),
-    weeksToSubtract,
-    finalDate: result.toISOString(),
-    inMonth: result.getUTCMonth() === month - 1
-  });
-
-  return result.getUTCMonth() === month - 1 ? result : null;
-}
-
-interface WeekRange {
-  start: Date;
-  end: Date;
-}
-
-function getWeekRange(start: Date): WeekRange {
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + 6);
-  end.setUTCHours(23, 59, 59, 999);
   return { start, end };
+}
+
+function findNthWeekOfMonth(year: number, month: number, n: number, weekStartsOn: number = 1): DateTime | null {
+  const firstDayOfMonth = DateTime.utc(year, month, 1);
+  const lastDayOfMonth = firstDayOfMonth.endOf('month');
+
+  // Set the week start
+  const firstDayWeekday = firstDayOfMonth.weekday % 7;
+  const daysToAdd = (7 - firstDayWeekday + weekStartsOn) % 7;
+  
+  if (n > 0) {
+    // For first week, if the first day of month is after our week start day,
+    // we need to go back to the previous week's start
+    let weekStart = firstDayOfMonth;
+    if (firstDayWeekday > weekStartsOn) {
+      weekStart = weekStart.minus({ days: firstDayWeekday - weekStartsOn });
+    }
+
+    // If we're too far back (in previous month), move to next week
+    if (weekStart.month !== month) {
+      weekStart = weekStart.plus({ weeks: 1 });
+    }
+
+    // Move to the nth week
+    weekStart = weekStart.plus({ weeks: n - 1 });
+
+    // If we've gone past the end of the month, return null
+    if (weekStart > lastDayOfMonth) return null;
+
+    return weekStart;
+  } else {
+    // Count from end
+    let weekStart = lastDayOfMonth;
+    const lastDayWeekday = weekStart.weekday % 7;
+
+    // Move to the start of the last week
+    weekStart = weekStart.minus({ days: (lastDayWeekday - weekStartsOn + 7) % 7 });
+
+    // Move backwards by weeks based on n
+    weekStart = weekStart.minus({ weeks: (-n - 1) });
+
+    // If we've gone before the start of the month, return null
+    if (weekStart < firstDayOfMonth) return null;
+
+    return weekStart;
+  }
 }
 
 export const ordinalWeeksRule: RuleModule = {
   name: 'ordinal-weeks',
   patterns: [
     {
-      name: 'week-of-month',
-      regex: /^(?:the\s+)?(\d+(?:st|nd|rd|th)?|first|second|third|fourth|fifth|last|second to last|third to last)\s+week\s+(?:of\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)$/i,
-      parse: (matches: RegExpMatchArray): IntermediateParse => {
-        Logger.debug('Parsing week pattern', { matches: matches.map(m => m) });
+      regex: /^(?:first|1st|second|2nd|third|3rd|fourth|4th|fifth|5th|last|second\s+to\s+last|third\s+to\s+last)\s+week\s+(?:of|in)\s+(january|february|march|april|may|june|july|august|september|october|november|december)$/i,
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+        const [, ordinal, month] = matches;
+        
+        // Convert ordinal to number
+        let n: number;
+        if (ordinal === 'last') {
+          n = -1;
+        } else if (ordinal === 'second to last') {
+          n = -2;
+        } else if (ordinal === 'third to last') {
+          n = -3;
+        } else {
+          n = {
+            'first': 1, '1st': 1,
+            'second': 2, '2nd': 2,
+            'third': 3, '3rd': 3,
+            'fourth': 4, '4th': 4,
+            'fifth': 5, '5th': 5
+          }[ordinal.toLowerCase()] || 0;
+        }
+        
+        if (n === 0) return null;
+
+        const monthNum = MONTHS[month.toLowerCase() as keyof typeof MONTHS];
+        if (!monthNum) return null;
+
+        const year = preferences.referenceDate?.year || DateTime.now().year;
+        const weekStartsOn = preferences.weekStartsOn || 1;
+
+        const targetDate = findNthWeekOfMonth(year, monthNum, n, weekStartsOn);
+        if (!targetDate) return null;
+
+        const { start, end } = getWeekRange(targetDate, weekStartsOn);
+
         return {
-          type: 'ordinal',
-          tokens: [matches[0]],
-          pattern: 'week-of-month',
-          captures: {
-            ordinal: matches[1].toLowerCase(),
-            month: matches[2].toLowerCase(),
-            returnRange: 'true'
-          }
+          type: 'range',
+          start,
+          end,
+          confidence: 1.0,
+          text: matches[0]
         };
       }
     }
-  ],
-  interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult | null => {
-    const { ordinal, month } = intermediate.captures || {};
-    if (!ordinal || !month) return null;
-    
-    const weekStartsOn = prefs.weekStartsOn ?? 1;
-    
-    Logger.debug('Preference details', {
-      rawPrefs: prefs,
-      weekStartsOn,
-      weekStartDay: prefs.weekStartsOn,  // Check both properties
-      defaulted: !prefs.weekStartsOn
-    });
-
-    const year = prefs.referenceDate?.getUTCFullYear() || new Date().getUTCFullYear();
-    const monthNum = MONTHS[month as keyof typeof MONTHS];
-    
-    Logger.debug('Interpreting ordinal week', {
-      ordinal,
-      month,
-      year,
-      monthNum,
-      weekStartsOn
-    });
-
-    const ordinalNum = getOrdinalNumber(ordinal);
-    let start: Date | null;
-
-    if (ordinalNum > 0) {
-      // Forward ordinal (first, second, etc.)
-      start = findNthWeekStart(year, monthNum, ordinalNum, weekStartsOn);
-    } else {
-      // Backward ordinal (last, second to last, etc.)
-      start = findNthWeekFromEnd(year, monthNum, ordinalNum, weekStartsOn);
-    }
-
-    if (!start) {
-      return null;
-    }
-
-    // Always return range for weeks
-    const { start: rangeStart, end } = getWeekRange(start);
-    return {
-      type: 'range',
-      start: rangeStart,
-      end,
-      confidence: 1.0,
-      text: intermediate.tokens?.[0] || intermediate.text || ''
-    };
-  }
+  ]
 }; 

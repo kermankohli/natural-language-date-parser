@@ -3,23 +3,28 @@ import { tokenize, TokenizerOptions } from '../tokenizer/tokenizer';
 import { debugTrace } from '../utils/debug-trace';
 import { Logger } from '../utils/Logger';
 import { resolvePreferences } from '../resolver/preference-resolver';
+import { DateTime } from 'luxon';
 
-export type ParserState = {
+export interface ParserState {
   rules: RuleModule[];
   tokenizerOptions: TokenizerOptions;
   defaultPreferences: DateParsePreferences;
-};
+}
 
-export const createParserState = (preferences: DateParsePreferences = {}): ParserState => ({
-  rules: [],
-  tokenizerOptions: {},
-  defaultPreferences: preferences,
-});
+export function createParserState(preferences: DateParsePreferences): ParserState {
+  return {
+    rules: [],
+    tokenizerOptions: {},
+    defaultPreferences: preferences,
+  };
+}
 
-export const registerRule = (state: ParserState, rule: RuleModule): ParserState => ({
-  ...state,
-  rules: [...state.rules, rule]
-});
+export function registerRule(state: ParserState, rule: RuleModule): ParserState {
+  return {
+    ...state,
+    rules: [...state.rules, rule]
+  };
+}
 
 const intermediateToResult = (intermediate: IntermediateParse, rule: RuleModule, prefs: DateParsePreferences): ParseResult | null => {
   // If the rule has an interpret function, use it
@@ -50,15 +55,22 @@ const intermediateToResult = (intermediate: IntermediateParse, rule: RuleModule,
   return null;
 };
 
-export const parse = (
-  state: ParserState,
-  input: string,
-  preferences: DateParsePreferences = {}
-): ParseResult | null => {
-  const mergedPrefs = { ...state.defaultPreferences, ...preferences };
+export function parse(state: ParserState, input: string, preferences?: DateParsePreferences): ParseResult | null {
+  const mergedPrefs = {
+    ...state.defaultPreferences,
+    ...preferences
+  };
   
+  Logger.debug('�� ~ parse ~ input:', { input });
+  Logger.debug('🚀 ~ parse ~ preferences:', {
+    referenceDate: mergedPrefs.referenceDate?.toISO(),
+    timeZone: mergedPrefs.timeZone,
+    weekStartsOn: mergedPrefs.weekStartsOn
+  });
+
   // Regular parsing flow
   const tokens = tokenize(input, state.tokenizerOptions);
+  Logger.debug('🚀 ~ parse ~ tokens:', { tokens });
 
   if (mergedPrefs.debug) {
     debugTrace.startTrace(input);
@@ -70,31 +82,44 @@ export const parse = (
   }
 
   // Try each rule module
+  let dateResult: ParseResult | null = null;
+  let timeResult: ParseResult | null = null;
+
   for (const rule of state.rules) {
     // Try each pattern in the rule
     for (const pattern of rule.patterns) {
-      const joinedTokens = tokens.join(' ');
-      const matches = joinedTokens.match(pattern.regex);
+      const matches = pattern.regex.exec(input);
 
       if (matches) {
+        Logger.debug('🚀 ~ parse ~ matched rule:', {
+          ruleName: rule.name,
+          pattern: pattern.regex.toString(),
+          matches: matches.slice()
+        });
+
         if (mergedPrefs.debug) {
           debugTrace.addRuleMatch({
             ruleName: rule.name,
-            input: joinedTokens,
+            input: matches.join(' '),
             matched: true
           });
         }
 
         try {
-          const intermediate = pattern.parse(matches, mergedPrefs);
-          if (!intermediate) continue;
-
-          const result = intermediateToResult(intermediate, rule, mergedPrefs);
+          const result = pattern.parse(matches, mergedPrefs);
           if (result) {
-            const finalResult = resolvePreferences(result, mergedPrefs);
-            if (finalResult) {
-              Logger.debug(`Matched rule: ${rule.name}`);
-              return finalResult;
+            Logger.debug('🚀 ~ parse ~ rule result:', {
+              ruleName: rule.name,
+              type: result.type,
+              start: result.start.toISO(),
+              startZone: result.start.zoneName,
+              text: result.text
+            });
+
+            if (rule.name === 'time-only') {
+              timeResult = result;
+            } else {
+              dateResult = result;
             }
           }
         } catch (err) {
@@ -104,7 +129,7 @@ export const parse = (
       } else if (mergedPrefs.debug) {
         debugTrace.addRuleMatch({
           ruleName: rule.name,
-          input: joinedTokens,
+          input: input,
           matched: false
         });
       }
@@ -113,6 +138,49 @@ export const parse = (
 
   if (mergedPrefs.debug) {
     debugTrace.endTrace();
+  }
+
+  // Combine date and time results if both exist
+  if (dateResult && timeResult) {
+    Logger.debug('🚀 ~ parse ~ combining results:', {
+      date: {
+        type: dateResult.type,
+        start: dateResult.start.toISO(),
+        startZone: dateResult.start.zoneName
+      },
+      time: {
+        type: timeResult.type,
+        start: timeResult.start.toISO(),
+        startZone: timeResult.start.zoneName
+      }
+    });
+
+    const combinedResult: ParseResult = {
+      type: 'single',
+      start: dateResult.start.set({
+        hour: timeResult.start.hour,
+        minute: timeResult.start.minute,
+        second: timeResult.start.second
+      }),
+      confidence: Math.min(dateResult.confidence, timeResult.confidence),
+      text: input
+    };
+
+    Logger.debug('🚀 ~ parse ~ combined result:', {
+      type: combinedResult.type,
+      start: combinedResult.start.toISO(),
+      startZone: combinedResult.start.zoneName
+    });
+
+    return resolvePreferences(combinedResult, mergedPrefs);
+  }
+
+  // Return date or time result if only one exists
+  if (dateResult) {
+    return resolvePreferences(dateResult, mergedPrefs);
+  }
+  if (timeResult) {
+    return resolvePreferences(timeResult, mergedPrefs);
   }
 
   return null;

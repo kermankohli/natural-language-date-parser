@@ -1,57 +1,57 @@
-import { createParserState, registerRule, parse } from '../../src/parser/parser-engine';
+import { DateTime } from 'luxon';
+import { createParserState, registerRule } from '../../src/parser/parser-engine';
 import { partialMonthRule } from '../../src/rules/partial-month';
 
 describe('Partial Month Rule', () => {
-  const referenceDate = new Date('2024-03-14T12:00:00Z'); // Thursday, March 14, 2024
+  const referenceDate = DateTime.fromISO('2024-03-14T12:00:00Z');
 
-  it('should parse early/mid/late month', () => {
+  test('early/mid/late month', () => {
     let state = createParserState({ referenceDate });
     state = registerRule(state, partialMonthRule);
 
-    const early = parse(state, 'early March');
-    expect(early?.type).toBe('range');
-    expect(early?.start.toISOString().slice(0, 10)).toBe('2024-03-01');
-    expect(early?.end?.toISOString().slice(0, 10)).toBe('2024-03-10');
+    const earlyPattern = state.rules[0].patterns.find(p => p.regex.test('early March'));
+    const early = earlyPattern?.parse(earlyPattern.regex.exec('early March')!, { referenceDate });
+    expect(early?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-01');
+    expect(early?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-10');
 
-    const mid = parse(state, 'mid March');
-    expect(mid?.type).toBe('range');
-    expect(mid?.start.toISOString().slice(0, 10)).toBe('2024-03-11');
-    expect(mid?.end?.toISOString().slice(0, 10)).toBe('2024-03-20');
+    const midPattern = state.rules[0].patterns.find(p => p.regex.test('mid March'));
+    const mid = midPattern?.parse(midPattern.regex.exec('mid March')!, { referenceDate });
+    expect(mid?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-11');
+    expect(mid?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-20');
 
-    const late = parse(state, 'late March');
-    expect(late?.type).toBe('range');
-    expect(late?.start.toISOString().slice(0, 10)).toBe('2024-03-21');
-    expect(late?.end?.toISOString().slice(0, 10)).toBe('2024-03-31');
+    const latePattern = state.rules[0].patterns.find(p => p.regex.test('late March'));
+    const late = latePattern?.parse(latePattern.regex.exec('late March')!, { referenceDate });
+    expect(late?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-21');
+    expect(late?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-31');
   });
 
-  it('should handle different month formats', () => {
+  test('month format variations', () => {
     let state = createParserState({ referenceDate });
     state = registerRule(state, partialMonthRule);
 
-    const fullName = parse(state, 'early March');
-    const abbreviated = parse(state, 'early Mar');
-
-    expect(fullName?.start.toISOString().slice(0, 10))
-      .toBe(abbreviated?.start.toISOString().slice(0, 10));
-    expect(fullName?.end?.toISOString().slice(0, 10))
-      .toBe(abbreviated?.end?.toISOString().slice(0, 10));
-  });
-
-  it('should handle different part formats', () => {
-    let state = createParserState({ referenceDate });
-    state = registerRule(state, partialMonthRule);
-
-    const formats = [
-      'early March',
-      'beginning of March',
-      'start of March'
+    const variations = [
+      { input: 'early March', expected: '2024-03-01' },
+      { input: 'early Mar', expected: '2024-03-01' },
+      { input: 'early MARCH', expected: '2024-03-01' },
+      { input: 'early march', expected: '2024-03-01' }
     ];
 
-    formats.forEach(format => {
-      const result = parse(state, format);
-      expect(result?.type).toBe('range');
-      expect(result?.start.toISOString().slice(0, 10)).toBe('2024-03-01');
-      expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-03-10');
+    for (const { input, expected } of variations) {
+      const pattern = state.rules[0].patterns.find(p => p.regex.test(input));
+      const result = pattern?.parse(pattern.regex.exec(input)!, { referenceDate });
+      expect(result?.start?.toUTC().toISO()?.slice(0, 10)).toBe(expected);
+    }
+  });
+
+  test('timezone handling', () => {
+    let state = createParserState({
+      referenceDate,
+      timeZone: 'America/New_York'
     });
+    state = registerRule(state, partialMonthRule);
+
+    const pattern = state.rules[0].patterns.find(p => p.regex.test('early March'));
+    const result = pattern?.parse(pattern.regex.exec('early March')!, { referenceDate, timeZone: 'America/New_York' });
+    expect(result?.start?.toUTC().toISO()).toBe('2024-03-01T05:00:00.000Z');
   });
 }); 

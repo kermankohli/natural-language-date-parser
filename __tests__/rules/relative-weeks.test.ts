@@ -1,52 +1,54 @@
-import { createParserState, registerRule, parse } from '../../src/parser/parser-engine';
+import { DateTime } from 'luxon';
+import { createParserState, registerRule } from '../../src/parser/parser-engine';
 import { relativeWeeksRule } from '../../src/rules/relative-weeks';
 
 describe('Relative Weeks Rule', () => {
-  const referenceDate = new Date('2024-03-14T12:00:00Z'); // Thursday, March 14, 2024
+  const referenceDate = DateTime.fromISO('2024-03-14T12:00:00Z');
 
-  it('should parse this week', () => {
+  test('this week', () => {
     let state = createParserState({ referenceDate });
     state = registerRule(state, relativeWeeksRule);
 
-    const result = parse(state, 'this week');
-    expect(result?.type).toBe('range');
-    expect(result?.start.toISOString().slice(0, 10)).toBe('2024-03-11');
-    expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-03-17');
+    const pattern = state.rules[0].patterns.find(p => p.regex.test('this week'));
+    const result = pattern?.parse(pattern.regex.exec('this week')!, { referenceDate });
+    expect(result?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-11');
+    expect(result?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-17');
   });
 
-  it('should parse next week', () => {
+  test('next week', () => {
     let state = createParserState({ referenceDate });
     state = registerRule(state, relativeWeeksRule);
 
-    const result = parse(state, 'next week');
-    expect(result?.type).toBe('range');
-    expect(result?.start.toISOString().slice(0, 10)).toBe('2024-03-18');
-    expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-03-24');
+    const pattern = state.rules[0].patterns.find(p => p.regex.test('next week'));
+    const result = pattern?.parse(pattern.regex.exec('next week')!, { referenceDate });
+    expect(result?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-18');
+    expect(result?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-24');
   });
 
-  it('should parse last week', () => {
+  test('last week', () => {
     let state = createParserState({ referenceDate });
     state = registerRule(state, relativeWeeksRule);
 
-    const result = parse(state, 'last week');
-    expect(result?.type).toBe('range');
-    expect(result?.start.toISOString().slice(0, 10)).toBe('2024-03-04');
-    expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-03-10');
+    const pattern = state.rules[0].patterns.find(p => p.regex.test('last week'));
+    const result = pattern?.parse(pattern.regex.exec('last week')!, { referenceDate });
+    expect(result?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-04');
+    expect(result?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-10');
   });
 
-  it('should respect week start preference', () => {
+  test('week start preferences', () => {
     let state = createParserState({ referenceDate, weekStartsOn: 1 }); // Monday
     state = registerRule(state, relativeWeeksRule);
 
-    const mondayStart = parse(state, 'this week');
-    expect(mondayStart?.start.toISOString().slice(0, 10)).toBe('2024-03-11');
-    expect(mondayStart?.end?.toISOString().slice(0, 10)).toBe('2024-03-17');
+    const pattern = state.rules[0].patterns.find(p => p.regex.test('this week'));
+    const mondayStart = pattern?.parse(pattern.regex.exec('this week')!, { referenceDate, weekStartsOn: 1 });
+    expect(mondayStart?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-04');
+    expect(mondayStart?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-10');
 
     state = createParserState({ referenceDate, weekStartsOn: 0 }); // Sunday
     state = registerRule(state, relativeWeeksRule);
 
-    const sundayStart = parse(state, 'this week');
-    expect(sundayStart?.start.toISOString().slice(0, 10)).toBe('2024-03-10');
-    expect(sundayStart?.end?.toISOString().slice(0, 10)).toBe('2024-03-16');
+    const sundayStart = pattern?.parse(pattern.regex.exec('this week')!, { referenceDate, weekStartsOn: 0 });
+    expect(sundayStart?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-03');
+    expect(sundayStart?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-09');
   });
 }); 

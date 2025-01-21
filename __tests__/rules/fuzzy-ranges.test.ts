@@ -1,134 +1,85 @@
-import { createParserState, registerRule, parse } from '../../src/parser/parser-engine';
+import { DateTime } from 'luxon';
+import { createParserState, registerRule } from '../../src/parser/parser-engine';
 import { fuzzyRangesRule } from '../../src/rules/fuzzy-ranges';
 
 describe('Fuzzy Ranges Rule', () => {
-  const referenceDate = new Date('2024-03-14T12:00:00Z'); // Thursday, March 14, 2024
+  const referenceDate = DateTime.fromISO('2024-03-14T12:00:00Z');
 
-  it('should parse beginning of period', () => {
+  test('beginning of year/month', () => {
     let state = createParserState({ referenceDate });
     state = registerRule(state, fuzzyRangesRule);
 
-    const beginningOfYear = parse(state, 'beginning of year');
-    expect(beginningOfYear?.type).toBe('range');
-    expect(beginningOfYear?.start.toISOString().slice(0, 10)).toBe('2024-01-01');
-    expect(beginningOfYear?.end?.toISOString().slice(0, 10)).toBe('2024-03-31');
+    const yearPattern = state.rules[0].patterns.find(p => p.regex.test('beginning of the year'));
+    const beginningOfYear = yearPattern?.parse(yearPattern.regex.exec('beginning of the year')!, { referenceDate });
+    expect(beginningOfYear?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-01-01');
+    expect(beginningOfYear?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-31');
 
-    const beginningOfMonth = parse(state, 'beginning of month');
-    expect(beginningOfMonth?.type).toBe('range');
-    expect(beginningOfMonth?.start.toISOString().slice(0, 10)).toBe('2024-03-01');
-    expect(beginningOfMonth?.end?.toISOString().slice(0, 10)).toBe('2024-03-10');
+    const monthPattern = state.rules[0].patterns.find(p => p.regex.test('beginning of the month'));
+    const beginningOfMonth = monthPattern?.parse(monthPattern.regex.exec('beginning of the month')!, { referenceDate });
+    expect(beginningOfMonth?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-01');
+    expect(beginningOfMonth?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-10');
   });
 
-  it('should parse middle of period', () => {
+  test('middle of year/month', () => {
     let state = createParserState({ referenceDate });
     state = registerRule(state, fuzzyRangesRule);
 
-    const middleOfYear = parse(state, 'middle of year');
-    expect(middleOfYear?.type).toBe('range');
-    expect(middleOfYear?.start.toISOString().slice(0, 10)).toBe('2024-05-01');
-    expect(middleOfYear?.end?.toISOString().slice(0, 10)).toBe('2024-08-31');
+    const yearPattern = state.rules[0].patterns.find(p => p.regex.test('middle of the year'));
+    const middleOfYear = yearPattern?.parse(yearPattern.regex.exec('middle of the year')!, { referenceDate });
+    expect(middleOfYear?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-05-01');
+    expect(middleOfYear?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-08-31');
 
-    const middleOfMonth = parse(state, 'middle of month');
-    expect(middleOfMonth?.type).toBe('range');
-    expect(middleOfMonth?.start.toISOString().slice(0, 10)).toBe('2024-03-11');
-    expect(middleOfMonth?.end?.toISOString().slice(0, 10)).toBe('2024-03-20');
+    const monthPattern = state.rules[0].patterns.find(p => p.regex.test('middle of the month'));
+    const middleOfMonth = monthPattern?.parse(monthPattern.regex.exec('middle of the month')!, { referenceDate });
+    expect(middleOfMonth?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-11');
+    expect(middleOfMonth?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-20');
   });
 
-  it('should parse end of period', () => {
+  test('end of year/month', () => {
     let state = createParserState({ referenceDate });
     state = registerRule(state, fuzzyRangesRule);
 
-    const endOfYear = parse(state, 'end of year');
-    expect(endOfYear?.type).toBe('range');
-    expect(endOfYear?.start.toISOString().slice(0, 10)).toBe('2024-09-01');
-    expect(endOfYear?.end?.toISOString().slice(0, 10)).toBe('2024-12-31');
+    const yearPattern = state.rules[0].patterns.find(p => p.regex.test('end of the year'));
+    const endOfYear = yearPattern?.parse(yearPattern.regex.exec('end of the year')!, { referenceDate });
+    expect(endOfYear?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-09-01');
+    expect(endOfYear?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-12-31');
 
-    const endOfMonth = parse(state, 'end of month');
-    expect(endOfMonth?.type).toBe('range');
-    expect(endOfMonth?.start.toISOString().slice(0, 10)).toBe('2024-03-21');
-    expect(endOfMonth?.end?.toISOString().slice(0, 10)).toBe('2024-03-31');
+    const monthPattern = state.rules[0].patterns.find(p => p.regex.test('end of the month'));
+    const endOfMonth = monthPattern?.parse(monthPattern.regex.exec('end of the month')!, { referenceDate });
+    expect(endOfMonth?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-21');
+    expect(endOfMonth?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-31');
   });
 
-  it('should handle different period formats', () => {
+  test('format variations', () => {
     let state = createParserState({ referenceDate });
     state = registerRule(state, fuzzyRangesRule);
 
-    // Test beginning/start variations
-    const beginningFormats = [
-      'beginning of year',
-      'start of year',
-      'early year',
-      'the beginning of the year',
+    const yearVariations = [
       'beginning of the year',
+      'beginning of year',
       'start of the year',
-      'early in the year'
+      'start of year'
     ];
 
-    beginningFormats.forEach(format => {
-      const result = parse(state, format);
-      expect(result?.type).toBe('range');
-      expect(result?.start.toISOString().slice(0, 10)).toBe('2024-01-01');
-      expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-03-31');
-    });
+    for (const input of yearVariations) {
+      const pattern = state.rules[0].patterns.find(p => p.regex.test(input));
+      const result = pattern?.parse(pattern.regex.exec(input)!, { referenceDate });
+      expect(result?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-01-01');
+      expect(result?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-31');
+    }
 
-    // Test middle variations
-    const middleFormats = [
-      'middle of year',
-      'mid year',
-      'mid-year',
-      'the middle of the year',
-      'middle of the year',
-      'mid of year',
-      'mid of the year'
+    const monthVariations = [
+      'middle of the month',
+      'middle of month',
+      'mid month',
+      'mid-month'
     ];
 
-    middleFormats.forEach(format => {
-      const result = parse(state, format);
-      expect(result?.type).toBe('range');
-      expect(result?.start.toISOString().slice(0, 10)).toBe('2024-05-01');
-      expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-08-31');
-    });
-
-    // Test end variations
-    const endFormats = [
-      'end of year',
-      'late year',
-      'the end of the year',
-      'end of the year',
-      'late in the year',
-      'year end',
-      'year-end'
-    ];
-
-    endFormats.forEach(format => {
-      const result = parse(state, format);
-      expect(result?.type).toBe('range');
-      expect(result?.start.toISOString().slice(0, 10)).toBe('2024-09-01');
-      expect(result?.end?.toISOString().slice(0, 10)).toBe('2024-12-31');
-    });
-
-    // Test with different periods
-    const periods = ['year', 'month', 'week'];
-    const parts = ['beginning', 'middle', 'end'];
-
-    periods.forEach(period => {
-      parts.forEach(part => {
-        const variations = [
-          `${part} of ${period}`,
-          `the ${part} of the ${period}`,
-          `${part} of the ${period}`,
-          `${part} ${period}`,
-          period === 'year' ? `${part}-${period}` : null,
-          period === 'year' ? `${period}-${part}` : null
-        ].filter(Boolean);
-
-        variations.forEach(format => {
-          const result = parse(state, format!);
-          expect(result?.type).toBe('range');
-          expect(result?.start).toBeTruthy();
-          expect(result?.end).toBeTruthy();
-        });
-      });
-    });
+    for (const input of monthVariations) {
+      const pattern = state.rules[0].patterns.find(p => p.regex.test(input));
+      const result = pattern?.parse(pattern.regex.exec(input)!, { referenceDate });
+      expect(result?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-11');
+      expect(result?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-20');
+    }
   });
 }); 

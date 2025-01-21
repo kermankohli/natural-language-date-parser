@@ -1,56 +1,56 @@
-import { RuleModule, IntermediateParse, ParseResult, DateParsePreferences } from '../types/types';
-import { Logger } from '../utils/Logger';
 import { DateTime } from 'luxon';
+import { DateParsePreferences, ParseResult, RuleModule, Pattern } from '../types/types';
+
+export function parse(state: { preferences: DateParsePreferences }, input: string, preferences?: DateParsePreferences): ParseResult | null {
+  const datePattern = /^(\d{4})-(\d{2})-(\d{2})$/;
+  const matches = input.match(datePattern);
+  if (!matches) return null;
+
+  const [_, year, month, day] = matches;
+  const date = DateTime.utc(
+    parseInt(year),
+    parseInt(month),
+    parseInt(day)
+  ).setZone(preferences?.timeZone, { keepLocalTime: true });
+
+  if (!date.isValid) {
+    return null;
+  }
+
+  return {
+    type: 'single',
+    start: date,
+    confidence: 1,
+    text: matches[0]
+  };
+}
+
+const patterns: Pattern[] = [
+  {
+    regex: /^(\d{4})-(\d{2})-(\d{2})$/,
+    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+      const [_, year, month, day] = matches;
+      const date = DateTime.utc(
+        parseInt(year),
+        parseInt(month),
+        parseInt(day)
+      );
+
+      if (!date.isValid) {
+        return null;
+      }
+
+      return {
+        type: 'single',
+        start: date,
+        confidence: 1,
+        text: matches[0]
+      };
+    }
+  }
+];
 
 export const dateOnlyRule: RuleModule = {
   name: 'date-only',
-  patterns: [
-    {
-      name: 'iso-date',
-      regex: /^(\d{4})-(\d{2})-(\d{2})$/i,
-      parse: (matches: RegExpMatchArray): IntermediateParse | null => {
-        const [, year, month, day] = matches;
-        
-        // Validate date components
-        const y = parseInt(year), m = parseInt(month), d = parseInt(day);
-        if (m > 12 || m < 1 || d > 31 || d < 1) return null;
-        
-        return {
-          type: 'absolute',
-          tokens: [matches[0]],
-          pattern: 'iso-date',
-          captures: {
-            year,
-            month,
-            day
-          }
-        };
-      }
-    }
-  ],
-  interpret: (intermediate: IntermediateParse, prefs: DateParsePreferences): ParseResult | null => {
-    const { year, month, day } = intermediate.captures || {};
-    if (!year || !month || !day) return null;
-
-    Logger.debug('Interpreting date components', {
-      year, month, day
-    });
-
-    // Create date in UTC
-    const dt = DateTime.fromObject(
-      {
-        year: parseInt(year),
-        month: parseInt(month),
-        day: parseInt(day)
-      },
-      { zone: prefs.timeZone || 'UTC' }
-    ).startOf('day');
-
-    return {
-      type: 'single',
-      start: dt.toJSDate(),
-      confidence: 1.0,
-      text: intermediate.tokens?.[0] || ''
-    };
-  }
+  patterns
 }; 

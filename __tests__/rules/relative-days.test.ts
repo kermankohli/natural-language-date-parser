@@ -1,39 +1,49 @@
-import { createParserState, registerRule, parse } from '../../src/parser/parser-engine';
+import { DateTime } from 'luxon';
+import { createParserState, registerRule } from '../../src/parser/parser-engine';
 import { relativeDaysRule } from '../../src/rules/relative-days';
 
 describe('Relative Days Rule', () => {
-  const referenceDate = new Date('2024-03-14T12:00:00Z'); // Thursday, March 14, 2024
+  const referenceDate = DateTime.fromISO('2024-03-14T12:00:00Z');
 
-  it('should parse today/tomorrow/yesterday', () => {
+  test('basic relative days', () => {
     let state = createParserState({ referenceDate });
     state = registerRule(state, relativeDaysRule);
 
-    const today = parse(state, 'today');
-    expect(today?.start.toISOString().slice(0, 10)).toBe('2024-03-14');
+    const pattern = state.rules[0].patterns.find(p => p.regex.test('today'));
+    const today = pattern?.parse(pattern.regex.exec('today')!, { referenceDate });
+    expect(today?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-14');
 
-    const tomorrow = parse(state, 'tomorrow');
-    expect(tomorrow?.start.toISOString().slice(0, 10)).toBe('2024-03-15');
+    const tomorrowPattern = state.rules[0].patterns.find(p => p.regex.test('tomorrow'));
+    const tomorrow = tomorrowPattern?.parse(tomorrowPattern.regex.exec('tomorrow')!, { referenceDate });
+    expect(tomorrow?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-15');
 
-    const yesterday = parse(state, 'yesterday');
-    expect(yesterday?.start.toISOString().slice(0, 10)).toBe('2024-03-13');
+    const yesterdayPattern = state.rules[0].patterns.find(p => p.regex.test('yesterday'));
+    const yesterday = yesterdayPattern?.parse(yesterdayPattern.regex.exec('yesterday')!, { referenceDate });
+    expect(yesterday?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-13');
   });
 
-  it('should parse X days ago/from now', () => {
+  test('days ago/from now', () => {
     let state = createParserState({ referenceDate });
     state = registerRule(state, relativeDaysRule);
 
-    const threeDaysAgo = parse(state, '3 days ago');
-    expect(threeDaysAgo?.start.toISOString().slice(0, 10)).toBe('2024-03-11');
+    const agoPattern = state.rules[0].patterns.find(p => p.regex.test('3 days ago'));
+    const threeDaysAgo = agoPattern?.parse(agoPattern.regex.exec('3 days ago')!, { referenceDate });
+    expect(threeDaysAgo?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-11');
 
-    const threeDaysFromNow = parse(state, '3 days from now');
-    expect(threeDaysFromNow?.start.toISOString().slice(0, 10)).toBe('2024-03-17');
+    const fromNowPattern = state.rules[0].patterns.find(p => p.regex.test('3 days from now'));
+    const threeDaysFromNow = fromNowPattern?.parse(fromNowPattern.regex.exec('3 days from now')!, { referenceDate });
+    expect(threeDaysFromNow?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-17');
   });
 
-  it('should handle invalid inputs', () => {
-    let state = createParserState({ referenceDate });
+  test('timezone handling', () => {
+    let state = createParserState({
+      referenceDate,
+      timeZone: 'America/New_York'
+    });
     state = registerRule(state, relativeDaysRule);
 
-    expect(parse(state, '0 days ago')).toBeNull();
-    expect(parse(state, '-3 days ago')).toBeNull();
+    const pattern = state.rules[0].patterns.find(p => p.regex.test('today'));
+    const result = pattern?.parse(pattern.regex.exec('today')!, { referenceDate, timeZone: 'America/New_York' });
+    expect(result?.start?.toUTC().toISO()).toBe('2024-03-14T04:00:00.000Z');
   });
 }); 

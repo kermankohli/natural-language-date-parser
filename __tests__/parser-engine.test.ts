@@ -1,40 +1,74 @@
+import { DateTime } from 'luxon';
 import { createParserState, registerRule, parse } from '../src/parser/parser-engine';
-import { RuleModule, IntermediateParse, DateParsePreferences } from '../src/types/types';
+import { DateParsePreferences, ParseResult, Pattern, RuleModule } from '../src/types/types';
 import { debugTrace } from '../src/utils/debug-trace';
 
+const mockRule: RuleModule = {
+  name: 'mock-rule',
+  patterns: [
+    {
+      regex: /^test$/i,
+      parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+        const date = preferences.referenceDate || DateTime.now();
+        return {
+          type: 'single',
+          start: date,
+          confidence: 1,
+          text: 'test'
+        };
+      }
+    }
+  ]
+};
+
 describe('Parser Engine', () => {
-  const mockRule: RuleModule = {
-    name: 'mock-rule',
-    patterns: [{
-      name: 'mock-pattern',
-      regex: /test/,
-      parse: (matches: RegExpMatchArray, prefs: DateParsePreferences) => ({
+  test('should parse using registered rules', () => {
+    const mockPattern: Pattern = {
+      regex: /^test$/,
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult => ({
         type: 'single',
-        start: new Date(),
-        text: 'test',
-        confidence: 1.0
+        start: preferences.referenceDate || DateTime.now(),
+        confidence: 1,
+        text: matches[0]
       })
-    }]
-  };
+    };
 
-  beforeEach(() => {
-    debugTrace.clear();
-  });
+    const mockRule: RuleModule = {
+      name: 'mock-rule',
+      patterns: [mockPattern]
+    };
 
-  it('should register and use rules', () => {
-    let state = createParserState();
-    state = registerRule(state, mockRule);
+    const referenceDate = DateTime.fromISO('2025-01-21T00:22:39.609Z');
+    const state = createParserState({ referenceDate });
+    const stateWithRule = registerRule(state, mockRule);
 
-    const result = parse(state, 'test');
-    expect(result).toBeTruthy();
+    const result = parse(stateWithRule, 'test');
+    expect(result).toBeDefined();
     expect(result?.type).toBe('single');
+    expect(result?.text).toBe('test');
   });
 
-  it('should handle no matches', () => {
-    let state = createParserState();
-    state = registerRule(state, mockRule);
+  test('should return null for unmatched input', () => {
+    const mockPattern: Pattern = {
+      regex: /^test$/,
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult => ({
+        type: 'single',
+        start: preferences.referenceDate || DateTime.now(),
+        confidence: 1,
+        text: matches[0]
+      })
+    };
 
-    const result = parse(state, 'no match');
+    const mockRule: RuleModule = {
+      name: 'mock-rule',
+      patterns: [mockPattern]
+    };
+
+    const referenceDate = DateTime.fromISO('2025-01-21T00:22:39.609Z');
+    const state = createParserState({ referenceDate });
+    const stateWithRule = registerRule(state, mockRule);
+
+    const result = parse(stateWithRule, 'no match');
     expect(result).toBeNull();
   });
 
@@ -48,5 +82,11 @@ describe('Parser Engine', () => {
     const trace = debugTrace.getTrace();
     expect(trace).toBeTruthy();
     expect(trace?.matchAttempts.length).toBeGreaterThan(0);
+  });
+
+  test('should register rules', () => {
+    let state = createParserState({});
+    state = registerRule(state, mockRule);
+    expect(state.rules).toHaveLength(1);
   });
 }); 
