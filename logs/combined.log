@@ -18948,3 +18948,27 @@
 {"timestamp":"2025-01-21T02:16:38.936Z","level":"debug","message":"🚀 ~ resolvePreferences ~ context:","operationId":"no-op-id","context":{"referenceDate":"2024-03-14T20:00:00.000+08:00","referenceZone":"Asia/Makassar","timeZone":"America/New_York","weekStartsOn":0}}
 {"timestamp":"2025-01-21T02:16:38.937Z","level":"debug","message":"🚀 ~ resolvePreferences ~ before timezone conversion:","operationId":"no-op-id","context":{"start":"2024-03-15T23:30:00.000+08:00","startZone":"Asia/Makassar","startLocal":"2024-03-15T23:30:00.000+08:00"}}
 {"timestamp":"2025-01-21T02:16:38.938Z","level":"debug","message":"🚀 ~ resolvePreferences ~ after timezone conversion:","operationId":"no-op-id","context":{"start":"2024-03-15T23:30:00.000-04:00","startZone":"America/New_York","startUTC":"2024-03-16T03:30:00.000Z"}}
+{"timestamp":"2025-01-21T02:51:33.305Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["early March","early","March"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T02:51:33.307Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T02:51:33.308Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-01T00:00:00.000Z","end":"2024-03-10T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T02:51:33.308Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["mid March","mid","March"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T02:51:33.308Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T02:51:33.309Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-11T00:00:00.000Z","end":"2024-03-20T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T02:51:33.309Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["late March","late","March"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T02:51:33.309Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T02:51:33.309Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-21T00:00:00.000Z","end":"2024-03-31T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T02:51:33.310Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["early March","early","March"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T02:51:33.311Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T02:51:33.311Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-01T00:00:00.000Z","end":"2024-03-10T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T02:51:33.311Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["early Mar","early","Mar"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T02:51:33.311Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T02:51:33.311Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-01T00:00:00.000Z","end":"2024-03-10T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T02:51:33.311Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["early MARCH","early","MARCH"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T02:51:33.311Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T02:51:33.311Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-01T00:00:00.000Z","end":"2024-03-10T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T02:51:33.312Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["early march","early","march"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T02:51:33.312Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T02:51:33.312Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-01T00:00:00.000Z","end":"2024-03-10T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T02:51:33.312Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["early March","early","March"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00","timeZone":"America/New_York"}}}
+{"timestamp":"2025-01-21T02:51:33.312Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"America/New_York"}}
+{"timestamp":"2025-01-21T02:51:33.313Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-01T00:00:00.000-05:00","end":"2024-03-10T23:59:59.999-04:00"}}
