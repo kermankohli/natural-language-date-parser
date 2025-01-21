@@ -198,6 +198,50 @@ const patterns: Pattern[] = [
         text: matches[0]
       };
     }
+  },
+  {
+    regex: /^(\d{4})-(\d{2})-(\d{2})(?:\s+at\s+(\d{1,2}):(\d{2})(?:\s*(AM|PM))?)?$/i,
+    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+      const [_, year, month, day, hours, minutes, meridiem] = matches;
+      
+      // Parse the time components
+      let hour = hours ? parseInt(hours) : 0;
+      const minute = minutes ? parseInt(minutes) : 0;
+
+      if (meridiem) {
+        if (hour > 12) return null;
+        if (meridiem.toUpperCase() === 'PM' && hour < 12) hour += 12;
+        if (meridiem.toUpperCase() === 'AM' && hour === 12) hour = 0;
+      }
+
+      // Create base date in UTC
+      let date = DateTime.utc(
+        parseInt(year),
+        parseInt(month),
+        parseInt(day),
+        hour,
+        minute
+      );
+
+      // Handle timezone if preferences has one
+      if (preferences.timeZone) {
+        date = date.setZone(preferences.timeZone, { keepLocalTime: true });
+      }
+
+      // Convert to UTC for storage
+      const utcDate = date.toUTC();
+
+      if (!utcDate.isValid) {
+        return null;
+      }
+
+      return {
+        type: 'single',
+        start: utcDate,
+        confidence: 1,
+        text: matches[0]
+      };
+    }
   }
 ];
 

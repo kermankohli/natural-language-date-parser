@@ -174,6 +174,44 @@ export const fuzzyRangesRule: RuleModule = {
       }
     },
     {
+      regex: /^(?:the\s+)?(beginning|middle|mid|end|start|early|late)(?:\s+(?:of|in)\s+(?:the\s+)?|\s+|\-)(january|february|march|april|may|june|july|august|september|october|november|december)$/i,
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+        const [fullMatch, part, month] = matches;
+        if (!part || !month) return null;
+
+        let normalizedPart = part.toLowerCase();
+        if (normalizedPart === 'start' || normalizedPart === 'early') normalizedPart = 'beginning';
+        if (normalizedPart === 'mid') normalizedPart = 'middle';
+        if (normalizedPart === 'late') normalizedPart = 'end';
+
+        const monthNum = MONTHS[month.toLowerCase() as keyof typeof MONTHS];
+        if (!monthNum) return null;
+
+        const year = preferences.referenceDate?.year || DateTime.now().year;
+        const monthStart = DateTime.utc(year, monthNum, 1);
+        
+        let start: DateTime, end: DateTime;
+        if (normalizedPart === 'beginning') {
+          start = monthStart;
+          end = monthStart.plus({ days: 9 }).endOf('day');
+        } else if (normalizedPart === 'middle') {
+          start = monthStart.plus({ days: 10 });
+          end = monthStart.plus({ days: 19 }).endOf('day');
+        } else { // end
+          start = monthStart.plus({ days: 20 });
+          end = monthStart.endOf('month');
+        }
+        
+        return {
+          type: 'range',
+          start,
+          end,
+          confidence: 1.0,
+          text: fullMatch
+        };
+      }
+    },
+    {
       regex: /^(first|last)\s+(\d+)\s+days\s+(?:of\s+)?(next\s+month|(?:january|february|march|april|may|june|july|august|september|october|november|december))$/i,
       parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
         const [, position, count, month] = matches;
@@ -233,7 +271,7 @@ export const fuzzyRangesRule: RuleModule = {
         let start: DateTime, end: DateTime;
         if (part === 'beginning') {
           start = monthStart;
-          end = monthStart.plus({ days: 4 }).endOf('day');
+          end = monthStart.plus({ days: 9 }).endOf('day');
         } else {
           const monthEnd = monthStart.endOf('month');
           start = monthEnd.minus({ days: 4 }).startOf('day');

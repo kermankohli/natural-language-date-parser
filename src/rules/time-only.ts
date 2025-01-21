@@ -41,13 +41,13 @@ const patterns: Pattern[] = [
     }
   },
   {
-    regex: /^noon$/i,
+    regex: /^(?:at\s+)?noon$/i,
     parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       return createTimeResult(12, 0, preferences);
     }
   },
   {
-    regex: /^midnight$/i,
+    regex: /^(?:at\s+)?midnight$/i,
     parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       return createTimeResult(0, 0, preferences);
     }
