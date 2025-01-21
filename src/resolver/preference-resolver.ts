@@ -9,12 +9,22 @@ interface ResolverContext {
   weekStartsOn: 0 | 1;
 }
 
-export function resolvePreferences(result: ParseResult, preferences: DateParsePreferences): ParseResult {
+export function resolvePreferences(result: ParseResult, preferences: DateParsePreferences, timeResult?: ParseResult): ParseResult {
   const context: ResolverContext = {
     referenceDate: preferences.referenceDate || DateTime.now(),
     timeZone: preferences.timeZone,
     weekStartsOn: preferences.weekStartsOn === 1 ? 1 : 0
   };
+
+  // If we have a time result, combine it with the date result
+  if (timeResult) {
+    result.start = result.start.set({
+      hour: timeResult.start.hour,
+      minute: timeResult.start.minute,
+      second: timeResult.start.second,
+      millisecond: timeResult.start.millisecond
+    });
+  }
 
   if (context.timeZone) {
 

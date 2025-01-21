@@ -20489,3 +20489,181 @@
 {"timestamp":"2025-01-21T03:40:38.490Z","level":"debug","message":"🚀 ~ resolvePreferences ~ context:","operationId":"no-op-id","context":{"referenceDate":"2024-03-14T20:00:00.000+08:00","referenceZone":"Asia/Makassar","weekStartsOn":1}}
 {"timestamp":"2025-01-21T03:40:38.490Z","level":"debug","message":"🚀 ~ resolvePreferences ~ input results:","operationId":"no-op-id","context":{"type":"single","start":"2024-03-18T08:00:00.000+08:00","startZone":"Asia/Makassar","text":"start of week"}}
 {"timestamp":"2025-01-21T03:40:38.491Z","level":"debug","message":"🚀 ~ resolvePreferences ~ context:","operationId":"no-op-id","context":{"referenceDate":"2024-03-14T20:00:00.000+08:00","referenceZone":"Asia/Makassar","weekStartsOn":0}}
+{"timestamp":"2025-01-21T03:54:19.859Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"14:30","options":{}}}
+{"timestamp":"2025-01-21T03:54:19.869Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"14:30:45","options":{}}}
+{"timestamp":"2025-01-21T03:54:19.869Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"14:30Z","options":{}}}
+{"timestamp":"2025-01-21T03:54:19.870Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"14:30+02:00","options":{}}}
+{"timestamp":"2025-01-21T03:54:19.870Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"14:30-05:00","options":{}}}
+{"timestamp":"2025-01-21T03:54:19.871Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"9:30 AM","options":{"allow12Hour":true}}}
+{"timestamp":"2025-01-21T03:54:19.871Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"2:30 PM","options":{"allow12Hour":true}}}
+{"timestamp":"2025-01-21T03:54:19.872Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"12:00 AM","options":{"allow12Hour":true}}}
+{"timestamp":"2025-01-21T03:54:19.872Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"12:00 PM","options":{"allow12Hour":true}}}
+{"timestamp":"2025-01-21T03:54:19.873Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"2:30 PM +02:00","options":{"allow12Hour":true}}}
+{"timestamp":"2025-01-21T03:54:19.874Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"24:00","options":{}}}
+{"timestamp":"2025-01-21T03:54:19.874Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"13:00 PM","options":{"allow12Hour":true}}}
+{"timestamp":"2025-01-21T03:54:19.874Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"12:60","options":{}}}
+{"timestamp":"2025-01-21T03:54:19.874Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"12:00:60","options":{}}}
+{"timestamp":"2025-01-21T03:54:19.875Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"12:00+15:00","options":{}}}
+{"timestamp":"2025-01-21T03:54:19.875Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"12:00+00:60","options":{}}}
+{"timestamp":"2025-01-21T03:54:19.875Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["1st of March","1","March"]}}
+{"timestamp":"2025-01-21T03:54:19.903Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["15th of March","15","March"]}}
+{"timestamp":"2025-01-21T03:54:19.905Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["1st of March","1","March"]}}
+{"timestamp":"2025-01-21T03:54:19.915Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["15th of March","15","March"]}}
+{"timestamp":"2025-01-21T03:54:19.916Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["23rd of March","23","March"]}}
+{"timestamp":"2025-01-21T03:54:19.916Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["31st of March","31","March"]}}
+{"timestamp":"2025-01-21T03:54:19.917Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["15th of March","15","March"]}}
+{"timestamp":"2025-01-21T03:54:19.918Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["first of March",null,"March"]}}
+{"timestamp":"2025-01-21T03:54:19.919Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["1st of March","1","March"]}}
+{"timestamp":"2025-01-21T03:54:19.919Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["second of March",null,"March"]}}
+{"timestamp":"2025-01-21T03:54:19.920Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["2nd of March","2","March"]}}
+{"timestamp":"2025-01-21T03:54:19.920Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["third of March",null,"March"]}}
+{"timestamp":"2025-01-21T03:54:19.921Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["3rd of March","3","March"]}}
+{"timestamp":"2025-01-21T03:54:19.921Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["fourth of March",null,"March"]}}
+{"timestamp":"2025-01-21T03:54:19.922Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["4th of March","4","March"]}}
+{"timestamp":"2025-01-21T03:54:19.922Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["1st of March","1","March"]}}
+{"timestamp":"2025-01-21T03:54:19.922Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["2nd of March","2","March"]}}
+{"timestamp":"2025-01-21T03:54:19.931Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["3rd of March","3","March"]}}
+{"timestamp":"2025-01-21T03:54:19.931Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["4th of March","4","March"]}}
+{"timestamp":"2025-01-21T03:54:19.931Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["5th of March","5","March"]}}
+{"timestamp":"2025-01-21T03:54:19.932Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["6th of March","6","March"]}}
+{"timestamp":"2025-01-21T03:54:19.932Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["7th of March","7","March"]}}
+{"timestamp":"2025-01-21T03:54:19.932Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["8th of March","8","March"]}}
+{"timestamp":"2025-01-21T03:54:19.933Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["9th of March","9","March"]}}
+{"timestamp":"2025-01-21T03:54:19.933Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["10th of March","10","March"]}}
+{"timestamp":"2025-01-21T03:54:19.933Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["11th of March","11","March"]}}
+{"timestamp":"2025-01-21T03:54:19.933Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["12th of March","12","March"]}}
+{"timestamp":"2025-01-21T03:54:19.934Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["13th of March","13","March"]}}
+{"timestamp":"2025-01-21T03:54:19.934Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["14th of March","14","March"]}}
+{"timestamp":"2025-01-21T03:54:19.934Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["15th of March","15","March"]}}
+{"timestamp":"2025-01-21T03:54:19.934Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["16th of March","16","March"]}}
+{"timestamp":"2025-01-21T03:54:19.935Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["17th of March","17","March"]}}
+{"timestamp":"2025-01-21T03:54:19.935Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["18th of March","18","March"]}}
+{"timestamp":"2025-01-21T03:54:19.935Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["19th of March","19","March"]}}
+{"timestamp":"2025-01-21T03:54:19.935Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["20th of March","20","March"]}}
+{"timestamp":"2025-01-21T03:54:19.936Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["21st of March","21","March"]}}
+{"timestamp":"2025-01-21T03:54:19.936Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["22nd of March","22","March"]}}
+{"timestamp":"2025-01-21T03:54:19.936Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["23rd of March","23","March"]}}
+{"timestamp":"2025-01-21T03:54:19.936Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["24th of March","24","March"]}}
+{"timestamp":"2025-01-21T03:54:19.936Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["25th of March","25","March"]}}
+{"timestamp":"2025-01-21T03:54:19.937Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["26th of March","26","March"]}}
+{"timestamp":"2025-01-21T03:54:19.937Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["27th of March","27","March"]}}
+{"timestamp":"2025-01-21T03:54:19.937Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["28th of March","28","March"]}}
+{"timestamp":"2025-01-21T03:54:19.937Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["29th of March","29","March"]}}
+{"timestamp":"2025-01-21T03:54:19.938Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["30th of March","30","March"]}}
+{"timestamp":"2025-01-21T03:54:19.938Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["31st of March","31","March"]}}
+{"timestamp":"2025-01-21T03:54:20.406Z","level":"debug","message":"Rule match attempt","operationId":"no-op-id","context":{"ruleName":"tokenizer","input":"test","matched":true}}
+{"timestamp":"2025-01-21T03:54:20.414Z","level":"debug","message":"Rule match attempt","operationId":"no-op-id","context":{"ruleName":"mock-rule","input":"test","matched":true}}
+{"timestamp":"2025-01-21T03:54:20.414Z","level":"debug","message":"Parse complete","operationId":"no-op-id","context":{"input":"test","matchAttempts":[{"ruleName":"tokenizer","input":"test","matched":true},{"ruleName":"mock-rule","input":"test","matched":true}]}}
+{"timestamp":"2025-01-21T03:54:20.441Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["early March","early","March"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T03:54:20.450Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T03:54:20.452Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-01T00:00:00.000Z","end":"2024-03-10T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T03:54:20.452Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["mid March","mid","March"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T03:54:20.453Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T03:54:20.454Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-11T00:00:00.000Z","end":"2024-03-20T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T03:54:20.454Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["late March","late","March"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T03:54:20.454Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T03:54:20.455Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-21T00:00:00.000Z","end":"2024-03-31T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T03:54:20.456Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["early March","early","March"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T03:54:20.456Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T03:54:20.457Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-01T00:00:00.000Z","end":"2024-03-10T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T03:54:20.457Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["early Mar","early","Mar"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T03:54:20.457Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T03:54:20.458Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-01T00:00:00.000Z","end":"2024-03-10T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T03:54:20.458Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["early MARCH","early","MARCH"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T03:54:20.459Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T03:54:20.459Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-01T00:00:00.000Z","end":"2024-03-10T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T03:54:20.459Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["early march","early","march"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T03:54:20.460Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T03:54:20.460Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-01T00:00:00.000Z","end":"2024-03-10T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T03:54:20.460Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["early March","early","March"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00","timeZone":"America/New_York"}}}
+{"timestamp":"2025-01-21T03:54:20.460Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"America/New_York"}}
+{"timestamp":"2025-01-21T03:54:20.461Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-01T00:00:00.000-05:00","end":"2024-03-10T23:59:59.999-04:00"}}
+{"timestamp":"2025-01-21T03:58:21.144Z","level":"debug","message":"Rule match attempt","operationId":"no-op-id","context":{"ruleName":"tokenizer","input":"test","matched":true}}
+{"timestamp":"2025-01-21T03:58:21.154Z","level":"debug","message":"Rule match attempt","operationId":"no-op-id","context":{"ruleName":"mock-rule","input":"test","matched":true}}
+{"timestamp":"2025-01-21T03:58:21.155Z","level":"debug","message":"Parse complete","operationId":"no-op-id","context":{"input":"test","matchAttempts":[{"ruleName":"tokenizer","input":"test","matched":true},{"ruleName":"mock-rule","input":"test","matched":true}]}}
+{"timestamp":"2025-01-21T03:58:21.177Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"14:30","options":{}}}
+{"timestamp":"2025-01-21T03:58:21.191Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"14:30:45","options":{}}}
+{"timestamp":"2025-01-21T03:58:21.192Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"14:30Z","options":{}}}
+{"timestamp":"2025-01-21T03:58:21.193Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"14:30+02:00","options":{}}}
+{"timestamp":"2025-01-21T03:58:21.193Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"14:30-05:00","options":{}}}
+{"timestamp":"2025-01-21T03:58:21.194Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"9:30 AM","options":{"allow12Hour":true}}}
+{"timestamp":"2025-01-21T03:58:21.194Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"2:30 PM","options":{"allow12Hour":true}}}
+{"timestamp":"2025-01-21T03:58:21.195Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"12:00 AM","options":{"allow12Hour":true}}}
+{"timestamp":"2025-01-21T03:58:21.196Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"12:00 PM","options":{"allow12Hour":true}}}
+{"timestamp":"2025-01-21T03:58:21.196Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"2:30 PM +02:00","options":{"allow12Hour":true}}}
+{"timestamp":"2025-01-21T03:58:21.197Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"24:00","options":{}}}
+{"timestamp":"2025-01-21T03:58:21.198Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"13:00 PM","options":{"allow12Hour":true}}}
+{"timestamp":"2025-01-21T03:58:21.198Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"12:60","options":{}}}
+{"timestamp":"2025-01-21T03:58:21.199Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"12:00:60","options":{}}}
+{"timestamp":"2025-01-21T03:58:21.199Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"12:00+15:00","options":{}}}
+{"timestamp":"2025-01-21T03:58:21.199Z","level":"debug","message":"Parsing time string","operationId":"no-op-id","context":{"timeStr":"12:00+00:60","options":{}}}
+{"timestamp":"2025-01-21T03:58:21.150Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["1st of March","1","March"]}}
+{"timestamp":"2025-01-21T03:58:21.169Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["15th of March","15","March"]}}
+{"timestamp":"2025-01-21T03:58:21.169Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["23rd of March","23","March"]}}
+{"timestamp":"2025-01-21T03:58:21.170Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["31st of March","31","March"]}}
+{"timestamp":"2025-01-21T03:58:21.171Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["15th of March","15","March"]}}
+{"timestamp":"2025-01-21T03:58:21.172Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["first of March",null,"March"]}}
+{"timestamp":"2025-01-21T03:58:21.173Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["1st of March","1","March"]}}
+{"timestamp":"2025-01-21T03:58:21.173Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["second of March",null,"March"]}}
+{"timestamp":"2025-01-21T03:58:21.173Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["2nd of March","2","March"]}}
+{"timestamp":"2025-01-21T03:58:21.174Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["third of March",null,"March"]}}
+{"timestamp":"2025-01-21T03:58:21.175Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["3rd of March","3","March"]}}
+{"timestamp":"2025-01-21T03:58:21.182Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["fourth of March",null,"March"]}}
+{"timestamp":"2025-01-21T03:58:21.183Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["4th of March","4","March"]}}
+{"timestamp":"2025-01-21T03:58:21.183Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["1st of March","1","March"]}}
+{"timestamp":"2025-01-21T03:58:21.184Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["2nd of March","2","March"]}}
+{"timestamp":"2025-01-21T03:58:21.184Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["3rd of March","3","March"]}}
+{"timestamp":"2025-01-21T03:58:21.184Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["4th of March","4","March"]}}
+{"timestamp":"2025-01-21T03:58:21.185Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["5th of March","5","March"]}}
+{"timestamp":"2025-01-21T03:58:21.185Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["6th of March","6","March"]}}
+{"timestamp":"2025-01-21T03:58:21.185Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["7th of March","7","March"]}}
+{"timestamp":"2025-01-21T03:58:21.186Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["8th of March","8","March"]}}
+{"timestamp":"2025-01-21T03:58:21.186Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["9th of March","9","March"]}}
+{"timestamp":"2025-01-21T03:58:21.187Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["10th of March","10","March"]}}
+{"timestamp":"2025-01-21T03:58:21.187Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["11th of March","11","March"]}}
+{"timestamp":"2025-01-21T03:58:21.188Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["12th of March","12","March"]}}
+{"timestamp":"2025-01-21T03:58:21.188Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["13th of March","13","March"]}}
+{"timestamp":"2025-01-21T03:58:21.189Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["14th of March","14","March"]}}
+{"timestamp":"2025-01-21T03:58:21.189Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["15th of March","15","March"]}}
+{"timestamp":"2025-01-21T03:58:21.191Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["16th of March","16","March"]}}
+{"timestamp":"2025-01-21T03:58:21.191Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["17th of March","17","March"]}}
+{"timestamp":"2025-01-21T03:58:21.192Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["18th of March","18","March"]}}
+{"timestamp":"2025-01-21T03:58:21.192Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["19th of March","19","March"]}}
+{"timestamp":"2025-01-21T03:58:21.192Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["20th of March","20","March"]}}
+{"timestamp":"2025-01-21T03:58:21.193Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["21st of March","21","March"]}}
+{"timestamp":"2025-01-21T03:58:21.193Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["22nd of March","22","March"]}}
+{"timestamp":"2025-01-21T03:58:21.193Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["23rd of March","23","March"]}}
+{"timestamp":"2025-01-21T03:58:21.193Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["24th of March","24","March"]}}
+{"timestamp":"2025-01-21T03:58:21.194Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["25th of March","25","March"]}}
+{"timestamp":"2025-01-21T03:58:21.194Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["26th of March","26","March"]}}
+{"timestamp":"2025-01-21T03:58:21.194Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["27th of March","27","March"]}}
+{"timestamp":"2025-01-21T03:58:21.194Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["28th of March","28","March"]}}
+{"timestamp":"2025-01-21T03:58:21.195Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["29th of March","29","March"]}}
+{"timestamp":"2025-01-21T03:58:21.227Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["30th of March","30","March"]}}
+{"timestamp":"2025-01-21T03:58:21.228Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["31st of March","31","March"]}}
+{"timestamp":"2025-01-21T03:58:21.226Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["early March","early","March"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T03:58:21.244Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T03:58:21.246Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-01T00:00:00.000Z","end":"2024-03-10T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T03:58:21.247Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["mid March","mid","March"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T03:58:21.248Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T03:58:21.249Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-11T00:00:00.000Z","end":"2024-03-20T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T03:58:21.249Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["late March","late","March"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T03:58:21.249Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T03:58:21.250Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-21T00:00:00.000Z","end":"2024-03-31T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T03:58:21.262Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["early March","early","March"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T03:58:21.263Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T03:58:21.263Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-01T00:00:00.000Z","end":"2024-03-10T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T03:58:21.264Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["early Mar","early","Mar"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T03:58:21.264Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T03:58:21.265Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-01T00:00:00.000Z","end":"2024-03-10T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T03:58:21.265Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["early MARCH","early","MARCH"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T03:58:21.266Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T03:58:21.266Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-01T00:00:00.000Z","end":"2024-03-10T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T03:58:21.267Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["early march","early","march"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00"}}}
+{"timestamp":"2025-01-21T03:58:21.267Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"UTC"}}
+{"timestamp":"2025-01-21T03:58:21.268Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-01T00:00:00.000Z","end":"2024-03-10T23:59:59.999Z"}}
+{"timestamp":"2025-01-21T03:58:21.269Z","level":"debug","message":"Parsing partial month","operationId":"no-op-id","context":{"matches":["early March","early","March"],"preferences":{"referenceDate":"2024-03-14T20:00:00.000+08:00","timeZone":"America/New_York"}}}
+{"timestamp":"2025-01-21T03:58:21.269Z","level":"debug","message":"Using timezone","operationId":"no-op-id","context":{"targetZone":"America/New_York"}}
+{"timestamp":"2025-01-21T03:58:21.270Z","level":"debug","message":"Created dates","operationId":"no-op-id","context":{"start":"2024-03-01T00:00:00.000-05:00","end":"2024-03-10T23:59:59.999-04:00"}}
+{"timestamp":"2025-01-21T03:58:21.930Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["1st of March","1","March"]}}
+{"timestamp":"2025-01-21T03:58:21.938Z","level":"debug","message":"Parsing ordinal day","operationId":"no-op-id","context":{"matches":["15th of March","15","March"]}}

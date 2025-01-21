@@ -21,7 +21,7 @@ describe('Preference Resolver', () => {
         text: 'at 3:30 PM'
       };
 
-      const result = resolvePreferences(dateResult, { referenceDate });
+      const result = resolvePreferences(dateResult, { referenceDate }, timeResult);
       expect(result?.start.toISO()).toBe('2024-03-15T15:30:00.000Z');
     });
   });

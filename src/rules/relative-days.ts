@@ -3,16 +3,13 @@ import { DateParsePreferences, ParseResult, RuleModule, Pattern } from '../types
 import { Logger } from '../utils/Logger';
 
 function createDateResult(date: DateTime, preferences: DateParsePreferences): ParseResult {
-  // If timezone is specified, convert to that timezone first before getting start of day
+  // If timezone is specified, convert to that timezone first
   // If no timezone is specified, use UTC
   const targetZone = preferences.timeZone || 'UTC';
   date = date.setZone(targetZone);
   
-  // Get start of day in the target timezone
-  const startOfDay = date.startOf('day');
-  
   // Convert back to UTC for storage
-  const utcDate = startOfDay.toUTC();
+  const utcDate = date.toUTC();
   
   return {
     type: 'single',
@@ -34,28 +31,28 @@ const WEEKDAYS = {
 
 const patterns: Pattern[] = [
   {
-    regex: /^today$/i,
+    regex: /(?:^|\s)today(?:\s|$)/i,
     parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       const date = preferences.referenceDate || DateTime.now();
       return createDateResult(date, preferences);
     }
   },
   {
-    regex: /^tomorrow$/i,
+    regex: /(?:^|\s)tomorrow(?:\s|$)/i,
     parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       const date = (preferences.referenceDate || DateTime.now()).plus({ days: 1 });
       return createDateResult(date, preferences);
     }
   },
   {
-    regex: /^yesterday$/i,
+    regex: /(?:^|\s)yesterday(?:\s|$)/i,
     parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       const date = (preferences.referenceDate || DateTime.now()).minus({ days: 1 });
       return createDateResult(date, preferences);
     }
   },
   {
-    regex: /^(\d+)\s+days?\s+from\s+(?:now|today)$/i,
+    regex: /(?:^|\s)(\d+)\s+days?\s+from\s+(?:now|today)(?:\s|$)/i,
     parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       const [_, days] = matches;
       const date = (preferences.referenceDate || DateTime.now()).plus({ days: parseInt(days) });
@@ -63,7 +60,7 @@ const patterns: Pattern[] = [
     }
   },
   {
-    regex: /^(\d+)\s+days?\s+ago$/i,
+    regex: /(?:^|\s)(\d+)\s+days?\s+ago(?:\s|$)/i,
     parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       const [_, days] = matches;
       const date = (preferences.referenceDate || DateTime.now()).minus({ days: parseInt(days) });
@@ -71,21 +68,21 @@ const patterns: Pattern[] = [
     }
   },
   {
-    regex: /^(the day after tomorrow|2 days from (now|today))$/i,
+    regex: /(?:^|\s)(the day after tomorrow|2 days from (?:now|today))(?:\s|$)/i,
     parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       const date = (preferences.referenceDate || DateTime.now()).plus({ days: 2 });
       return createDateResult(date, preferences);
     }
   },
   {
-    regex: /^(the day before yesterday|2 days ago)$/i,
+    regex: /(?:^|\s)(the day before yesterday|2 days ago)(?:\s|$)/i,
     parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       const date = (preferences.referenceDate || DateTime.now()).minus({ days: 2 });
       return createDateResult(date, preferences);
     }
   },
   {
-    regex: /^next\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat)$/i,
+    regex: /(?:^|\s)next\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat)(?:\s|$)/i,
     parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       const weekday = matches[1].toLowerCase() as keyof typeof WEEKDAYS;
       const targetDay = WEEKDAYS[weekday];

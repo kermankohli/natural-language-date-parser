@@ -21,7 +21,7 @@ function createTimeResult(hour: number, minute: number, preferences?: DateParseP
 
 const patterns: Pattern[] = [
   {
-    regex: /^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i,
+    regex: /(?:^|\s)(?:at\s+)?(\d{1,2}):(\d{2})(?:\s*(AM|PM))?(?:\s|$)/i,
     parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
       let [_, hours, minutes, meridiem] = matches;
       let hour = parseInt(hours);
@@ -41,13 +41,13 @@ const patterns: Pattern[] = [
     }
   },
   {
-    regex: /^(?:at\s+)?noon$/i,
+    regex: /(?:^|\s)(?:at\s+)?noon(?:\s|$)/i,
     parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       return createTimeResult(12, 0, preferences);
     }
   },
   {
-    regex: /^(?:at\s+)?midnight$/i,
+    regex: /(?:^|\s)(?:at\s+)?midnight(?:\s|$)/i,
     parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       return createTimeResult(0, 0, preferences);
     }
