@@ -198,7 +198,7 @@ export const fuzzyRangesRule: RuleModule = {
           start = monthStart.plus({ days: 10 });
           end = monthStart.plus({ days: 19 }).endOf('day');
         } else { // end
-          start = monthStart.plus({ days: 20 });
+          start = monthStart.plus({ days: 20 }); // This will be the 21st (1 + 20)
           end = monthStart.endOf('month');
         }
         
@@ -244,37 +244,6 @@ export const fuzzyRangesRule: RuleModule = {
           end = monthStart.plus({ days: numDays - 1 }).endOf('day');
         } else {
           start = monthEnd.minus({ days: numDays - 1 }).startOf('day');
-          end = monthEnd;
-        }
-
-        return {
-          type: 'range',
-          start,
-          end,
-          confidence: 1.0,
-          text: matches[0]
-        };
-      }
-    },
-    {
-      regex: /^(beginning|end)\s+(?:of\s+)?(january|february|march|april|may|june|july|august|september|october|november|december)$/i,
-      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
-        const [, part, month] = matches;
-        if (!part || !month) return null;
-
-        const monthNum = MONTHS[month.toLowerCase() as keyof typeof MONTHS];
-        if (!monthNum) return null;
-
-        const year = preferences.referenceDate?.year || DateTime.now().year;
-        const monthStart = DateTime.utc(year, monthNum, 1);
-
-        let start: DateTime, end: DateTime;
-        if (part === 'beginning') {
-          start = monthStart;
-          end = monthStart.plus({ days: 9 }).endOf('day');
-        } else {
-          const monthEnd = monthStart.endOf('month');
-          start = monthEnd.minus({ days: 4 }).startOf('day');
           end = monthEnd;
         }
 

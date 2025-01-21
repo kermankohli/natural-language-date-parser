@@ -16,10 +16,12 @@ export interface ParseTrace {
 
 export type DebugTraceState = {
   currentTrace: ParseTrace | null;
+  lastTrace: ParseTrace | null;
 };
 
 const createDebugTraceState = (): DebugTraceState => ({
-  currentTrace: null
+  currentTrace: null,
+  lastTrace: null
 });
 
 export const createDebugTrace = () => {
@@ -54,13 +56,15 @@ export const createDebugTrace = () => {
         matchAttempts: state.currentTrace.matchAttempts
       });
 
+      state.lastTrace = state.currentTrace;
       state.currentTrace = null;
     },
 
-    getTrace: (): ParseTrace | null => state.currentTrace,
+    getTrace: (): ParseTrace | null => state.lastTrace || state.currentTrace,
 
     clear: () => {
       state.currentTrace = null;
+      state.lastTrace = null;
     }
   };
 };

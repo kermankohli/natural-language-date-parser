@@ -11,7 +11,6 @@ describe('Date Only Rule', () => {
     const preferences: DateParsePreferences = { referenceDate };
     state = { preferences, rules: [] };
 
-    console.log('Date Parsing', parse(state, '2024-03-20'))
     expect(parse(state, '2024-03-20')?.start?.toISO()?.slice(0, 10)).toBe('2024-03-20');
 
     expect(parse(state, '2024-12-31')?.start?.toISO()?.slice(0, 10)).toBe('2024-12-31');

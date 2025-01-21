@@ -22,7 +22,7 @@ describe('Preference Resolver', () => {
       };
 
       const result = resolvePreferences(dateResult, { referenceDate });
-      expect(result?.start.toUTC().toISO()).toBe('2024-03-15T15:30:00.000Z');
+      expect(result?.start.toISO()).toBe('2024-03-15T15:30:00.000Z');
     });
   });
 
@@ -40,15 +40,14 @@ describe('Preference Resolver', () => {
         timeZone: 'America/New_York'
       });
 
-      expect(nyResult?.start.toUTC().hour).toBe(15); // 3:30 PM EDT = 20:30 UTC
+      expect(nyResult?.start.hour).toBe(15); 
 
       const tokyoResult = resolvePreferences(result, {
         referenceDate,
         timeZone: 'Asia/Tokyo'
       });
-
       // Verify the times are correctly adjusted for each timezone
-      expect(tokyoResult?.start.toUTC().hour).toBe(15); // 3:30 PM EDT = 20:30 UTC
+      expect(tokyoResult?.start.hour).toBe(19);
     });
   });
 

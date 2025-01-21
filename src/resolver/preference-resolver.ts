@@ -9,47 +9,42 @@ interface ResolverContext {
   weekStartsOn: 0 | 1;
 }
 
-export function resolvePreferences(results: ParseResult, preferences: DateParsePreferences): ParseResult {
-  Logger.debug('🚀 ~ resolvePreferences ~ input results:', {
-    type: results.type,
-    start: results.start.toISO(),
-    startZone: results.start.zoneName,
-    text: results.text
-  });
-
+export function resolvePreferences(result: ParseResult, preferences: DateParsePreferences): ParseResult {
   const context: ResolverContext = {
     referenceDate: preferences.referenceDate || DateTime.now(),
     timeZone: preferences.timeZone,
     weekStartsOn: preferences.weekStartsOn === 1 ? 1 : 0
   };
 
-  Logger.debug('🚀 ~ resolvePreferences ~ context:', {
-    referenceDate: context.referenceDate.toISO(),
-    referenceZone: context.referenceDate.zoneName,
-    timeZone: context.timeZone,
-    weekStartsOn: context.weekStartsOn
-  });
-
   if (context.timeZone) {
-    Logger.debug('🚀 ~ resolvePreferences ~ before timezone conversion:', {
-      start: results.start.toISO(),
-      startZone: results.start.zoneName,
-      startLocal: results.start.toLocal().toISO()
-    });
 
-    // First convert to the target timezone
-    results.start = results.start.setZone(context.timeZone, { keepLocalTime: true });
-    
-    Logger.debug('🚀 ~ resolvePreferences ~ after timezone conversion:', {
-      start: results.start.toISO(),
-      startZone: results.start.zoneName,
-      startUTC: results.start.toUTC().toISO()
-    });
+    // If the time is not midnight (00:00), we want to preserve the time
+    const hasTimeComponent = result.start.hour !== 0 || result.start.minute !== 0;
 
-    if (results.end) {
-      results.end = results.end.setZone(context.timeZone, { keepLocalTime: true });
+    // Convert to the target timezone
+    if (hasTimeComponent) {
+      // For times, we want to preserve the wall time in the target timezone
+      // First convert to UTC to normalize the date
+      const utc = result.start.toUTC();
+      
+      // Then set the timezone while keeping the wall time
+      result.start = utc.setZone(context.timeZone, { keepLocalTime: true });
+    } else {
+      // For dates without times, we want to keep the same date in the target timezone
+      result.start = result.start.setZone(context.timeZone, { keepLocalTime: true });
+    }
+
+    if (result.end) {
+      if (hasTimeComponent) {
+        // For times, we want to preserve the wall time in the target timezone
+        const utc = result.end.toUTC();
+        result.end = utc.setZone(context.timeZone, { keepLocalTime: true });
+      } else {
+        // For dates without times, we want to keep the same date in the target timezone
+        result.end = result.end.setZone(context.timeZone, { keepLocalTime: true });
+      }
     }
   }
 
-  return results;
+  return result;
 } 
