@@ -3,7 +3,6 @@ import { tokenize, TokenizerOptions } from '../tokenizer/tokenizer';
 import { debugTrace } from '../utils/debug-trace';
 import { Logger } from '../utils/Logger';
 import { resolvePreferences } from '../resolver/preference-resolver';
-import { DateTime } from 'luxon';
 
 export interface ParserState {
   rules: RuleModule[];
@@ -60,17 +59,9 @@ export function parse(state: ParserState, input: string, preferences?: DateParse
     ...state.defaultPreferences,
     ...preferences
   };
-  
-  Logger.debug('�� ~ parse ~ input:', { input });
-  Logger.debug('🚀 ~ parse ~ preferences:', {
-    referenceDate: mergedPrefs.referenceDate?.toISO(),
-    timeZone: mergedPrefs.timeZone,
-    weekStartsOn: mergedPrefs.weekStartsOn
-  });
 
   // Regular parsing flow
   const tokens = tokenize(input, state.tokenizerOptions);
-  Logger.debug('🚀 ~ parse ~ tokens:', { tokens });
 
   if (mergedPrefs.debug) {
     debugTrace.startTrace(input);
@@ -91,11 +82,6 @@ export function parse(state: ParserState, input: string, preferences?: DateParse
       const matches = pattern.regex.exec(input);
 
       if (matches) {
-        Logger.debug('🚀 ~ parse ~ matched rule:', {
-          ruleName: rule.name,
-          pattern: pattern.regex.toString(),
-          matches: matches.slice()
-        });
 
         if (mergedPrefs.debug) {
           debugTrace.addRuleMatch({
@@ -108,13 +94,6 @@ export function parse(state: ParserState, input: string, preferences?: DateParse
         try {
           const result = pattern.parse(matches, mergedPrefs);
           if (result) {
-            Logger.debug('🚀 ~ parse ~ rule result:', {
-              ruleName: rule.name,
-              type: result.type,
-              start: result.start.toISO(),
-              startZone: result.start.zoneName,
-              text: result.text
-            });
 
             if (rule.name === 'time-only') {
               timeResult = result;
@@ -142,19 +121,6 @@ export function parse(state: ParserState, input: string, preferences?: DateParse
 
   // Combine date and time results if both exist
   if (dateResult && timeResult) {
-    Logger.debug('🚀 ~ parse ~ combining results:', {
-      date: {
-        type: dateResult.type,
-        start: dateResult.start.toISO(),
-        startZone: dateResult.start.zoneName
-      },
-      time: {
-        type: timeResult.type,
-        start: timeResult.start.toISO(),
-        startZone: timeResult.start.zoneName
-      }
-    });
-
     const combinedResult: ParseResult = {
       type: 'single',
       start: dateResult.start.set({
@@ -165,12 +131,6 @@ export function parse(state: ParserState, input: string, preferences?: DateParse
       confidence: Math.min(dateResult.confidence, timeResult.confidence),
       text: input
     };
-
-    Logger.debug('🚀 ~ parse ~ combined result:', {
-      type: combinedResult.type,
-      start: combinedResult.start.toISO(),
-      startZone: combinedResult.start.zoneName
-    });
 
     return resolvePreferences(combinedResult, mergedPrefs);
   }

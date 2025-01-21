@@ -104,16 +104,100 @@ function createMonthNameParser(format: 'MonthFirst' | 'DayFirst') {
 
 const patterns: Pattern[] = [
   {
-    regex: /^(\d{4})-(\d{2})-(\d{2})$/,
-    parse: createDateParser('YMD')
+    regex: /^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{1,2}):(\d{2}))?(?:\s*([+-]\d{4})?)?$/,
+    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+      const [_, year, month, day, hours, minutes, timezone] = matches;
+      
+      // Create base date in UTC
+      let date = DateTime.utc(
+        parseInt(year),
+        parseInt(month),
+        parseInt(day)
+      );
+
+      // Add time if provided
+      if (hours && minutes) {
+        date = date.set({
+          hour: parseInt(hours),
+          minute: parseInt(minutes)
+        });
+      }
+
+      // Handle timezone if provided
+      if (timezone) {
+        // Convert timezone offset from ±HHMM to ±HH:MM format
+        const formattedTz = timezone.replace(/([+-])(\d{2})(\d{2})/, '$1$2:$3');
+        date = date.setZone(formattedTz, { keepLocalTime: true });
+      } else if (preferences.timeZone) {
+        // If no explicit timezone but preferences has one
+        date = date.setZone(preferences.timeZone, { keepLocalTime: true });
+      }
+
+      // Convert to UTC for storage
+      const utcDate = date.toUTC();
+
+      if (!utcDate.isValid) {
+        return null;
+      }
+
+      return {
+        type: 'single',
+        start: utcDate,
+        confidence: 1,
+        text: matches[0]
+      };
+    }
   },
   {
-    regex: /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/,
-    parse: createDateParser('MDY')
-  },
-  {
-    regex: /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/,
-    parse: createDateParser('DMY')
+    regex: /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s+(\d{1,2}):(\d{2}))?(?:\s*([+-]\d{4})?)?$/,
+    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+      const [_, month, day, year, hours, minutes, timezone] = matches;
+      let parsedYear = parseInt(year);
+      
+      // Handle 2-digit years
+      if (parsedYear < 100) {
+        parsedYear += parsedYear < 50 ? 2000 : 1900;
+      }
+
+      // Create base date in UTC
+      let date = DateTime.utc(
+        parsedYear,
+        parseInt(month),
+        parseInt(day)
+      );
+
+      // Add time if provided
+      if (hours && minutes) {
+        date = date.set({
+          hour: parseInt(hours),
+          minute: parseInt(minutes)
+        });
+      }
+
+      // Handle timezone if provided
+      if (timezone) {
+        // Convert timezone offset from ±HHMM to ±HH:MM format
+        const formattedTz = timezone.replace(/([+-])(\d{2})(\d{2})/, '$1$2:$3');
+        date = date.setZone(formattedTz, { keepLocalTime: true });
+      } else if (preferences.timeZone) {
+        // If no explicit timezone but preferences has one
+        date = date.setZone(preferences.timeZone, { keepLocalTime: true });
+      }
+
+      // Convert to UTC for storage
+      const utcDate = date.toUTC();
+
+      if (!utcDate.isValid) {
+        return null;
+      }
+
+      return {
+        type: 'single',
+        start: utcDate,
+        confidence: 1,
+        text: matches[0]
+      };
+    }
   }
 ];
 

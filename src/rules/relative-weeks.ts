@@ -1,42 +1,16 @@
 import { RuleModule, IntermediateParse, ParseResult, DateParsePreferences, Pattern } from '../types/types';
-import { Logger } from '../utils/Logger';
 import { DateTime } from 'luxon';
-type WeekStartDay = DateParsePreferences['weekStartsOn'];
-
-/**
- * Convert any Date to pure UTC midnight (00:00:00.000Z).
- * This prevents local time offsets from skewing the day-of-week.
- */
-function toUtcMidnight(date: DateTime): DateTime {
-  return date.set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
-}
-
-interface WeekRange {
-  start: Date;
-  end: Date;
-}
-
-function addWeeks(date: Date, weeks: number): Date {
-  const result = new Date(date);
-  result.setUTCDate(result.getUTCDate() + (weeks * 7));
-  return result;
-}
-
-function getWeekStart(date: DateTime, weekStartsOn: number = 0): DateTime {
-  const currentDay = date.weekday % 7;
-  const diff = (currentDay - weekStartsOn + 7) % 7;
-  return date.minus({ days: diff });
-}
 
 function getWeekRange(date: DateTime, weekStartsOn: number = 0): { start: DateTime; end: DateTime } {
-  const start = getWeekStart(date, weekStartsOn);
-  const end = start.plus({ days: 6 });
-  return { start, end };
-}
+  // Luxon uses 1-7 (Monday=1, Sunday=7)
+  // Calculate days to subtract to get to the start of the week
+  const daysToSubtract = ((date.weekday - weekStartsOn + 7) % 7);
+  
+  // Get start and end of week
+  const start = date.minus({ days: daysToSubtract }).startOf('day');
+  const end = start.plus({ days: 6 }).endOf('day');
 
-interface WeekCaptures {
-  offset: string;
-  returnRange?: 'true' | 'false';  // Control range vs single
+  return { start, end };
 }
 
 const patterns: Pattern[] = [
@@ -45,7 +19,7 @@ const patterns: Pattern[] = [
     parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
       const [_, modifier] = matches;
       const referenceDate = preferences.referenceDate || DateTime.now();
-      const weekStartsOn = preferences.weekStartsOn || 0;
+      const weekStartsOn = preferences.weekStartsOn;
 
       let targetDate = referenceDate;
       switch (modifier.toLowerCase()) {
@@ -58,6 +32,7 @@ const patterns: Pattern[] = [
       }
 
       const { start, end } = getWeekRange(targetDate, weekStartsOn);
+
       return {
         type: 'range',
         start,

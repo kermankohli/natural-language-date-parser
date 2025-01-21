@@ -11,8 +11,8 @@ describe('Relative Weeks Rule', () => {
 
     const pattern = state.rules[0].patterns.find(p => p.regex.test('this week'));
     const result = pattern?.parse(pattern.regex.exec('this week')!, { referenceDate });
-    expect(result?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-11');
-    expect(result?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-17');
+    expect(result?.start.toISO()?.slice(0, 10)).toBe('2024-03-10');
+    expect(result?.end?.toISO()?.slice(0, 10)).toBe('2024-03-16');
   });
 
   test('next week', () => {
@@ -21,8 +21,8 @@ describe('Relative Weeks Rule', () => {
 
     const pattern = state.rules[0].patterns.find(p => p.regex.test('next week'));
     const result = pattern?.parse(pattern.regex.exec('next week')!, { referenceDate });
-    expect(result?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-18');
-    expect(result?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-24');
+    expect(result?.start?.toISO()?.slice(0, 10)).toBe('2024-03-17');
+    expect(result?.end?.toISO()?.slice(0, 10)).toBe('2024-03-23');
   });
 
   test('last week', () => {
@@ -31,24 +31,24 @@ describe('Relative Weeks Rule', () => {
 
     const pattern = state.rules[0].patterns.find(p => p.regex.test('last week'));
     const result = pattern?.parse(pattern.regex.exec('last week')!, { referenceDate });
-    expect(result?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-04');
-    expect(result?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-10');
+    expect(result?.start?.toISO()?.slice(0, 10)).toBe('2024-03-03');
+    expect(result?.end?.toISO()?.slice(0, 10)).toBe('2024-03-09');
   });
 
   test('week start preferences', () => {
-    let state = createParserState({ referenceDate, weekStartsOn: 1 }); // Monday
+    let state = createParserState({ referenceDate, weekStartsOn: 0 }); // Monday
     state = registerRule(state, relativeWeeksRule);
 
     const pattern = state.rules[0].patterns.find(p => p.regex.test('this week'));
-    const mondayStart = pattern?.parse(pattern.regex.exec('this week')!, { referenceDate, weekStartsOn: 1 });
-    expect(mondayStart?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-04');
-    expect(mondayStart?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-10');
+    const mondayStart = pattern?.parse(pattern.regex.exec('this week')!, { referenceDate, weekStartsOn: 0 });
+    expect(mondayStart?.start?.toISO()?.slice(0, 10)).toBe('2024-03-10');
+    expect(mondayStart?.end?.toISO()?.slice(0, 10)).toBe('2024-03-16');
 
-    state = createParserState({ referenceDate, weekStartsOn: 0 }); // Sunday
+    state = createParserState({ referenceDate, weekStartsOn: 6 }); // Sunday
     state = registerRule(state, relativeWeeksRule);
 
-    const sundayStart = pattern?.parse(pattern.regex.exec('this week')!, { referenceDate, weekStartsOn: 0 });
-    expect(sundayStart?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-03');
-    expect(sundayStart?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-09');
+    const sundayStart = pattern?.parse(pattern.regex.exec('this week')!, { referenceDate, weekStartsOn: 6 });
+    expect(sundayStart?.start?.toISO()?.slice(0, 10)).toBe('2024-03-09');
+    expect(sundayStart?.end?.toISO()?.slice(0, 10)).toBe('2024-03-15');
   });
 }); 
