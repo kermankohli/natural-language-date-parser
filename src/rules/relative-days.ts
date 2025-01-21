@@ -2,9 +2,18 @@ import { DateTime } from 'luxon';
 import { DateParsePreferences, ParseResult, RuleModule, Pattern } from '../types/types';
 import { Logger } from '../utils/Logger';
 
-function createDateResult(date: DateTime): ParseResult {
-  // Ensure we're working with UTC
-  const utcDate = date.toUTC();
+function createDateResult(date: DateTime, preferences: DateParsePreferences): ParseResult {
+  // If timezone is specified, convert to that timezone first before getting start of day
+  // If no timezone is specified, use UTC
+  const targetZone = preferences.timeZone || 'UTC';
+  date = date.setZone(targetZone);
+  
+  // Get start of day in the target timezone
+  const startOfDay = date.startOf('day');
+  
+  // Convert back to UTC for storage
+  const utcDate = startOfDay.toUTC();
+  
   return {
     type: 'single',
     start: utcDate,
@@ -28,21 +37,21 @@ const patterns: Pattern[] = [
     regex: /^today$/i,
     parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       const date = preferences.referenceDate || DateTime.now();
-      return createDateResult(date.startOf('day'));
+      return createDateResult(date, preferences);
     }
   },
   {
     regex: /^tomorrow$/i,
     parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       const date = (preferences.referenceDate || DateTime.now()).plus({ days: 1 });
-      return createDateResult(date.startOf('day'));
+      return createDateResult(date, preferences);
     }
   },
   {
     regex: /^yesterday$/i,
     parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       const date = (preferences.referenceDate || DateTime.now()).minus({ days: 1 });
-      return createDateResult(date.startOf('day'));
+      return createDateResult(date, preferences);
     }
   },
   {
@@ -50,7 +59,7 @@ const patterns: Pattern[] = [
     parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       const [_, days] = matches;
       const date = (preferences.referenceDate || DateTime.now()).plus({ days: parseInt(days) });
-      return createDateResult(date.startOf('day'));
+      return createDateResult(date, preferences);
     }
   },
   {
@@ -58,21 +67,21 @@ const patterns: Pattern[] = [
     parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       const [_, days] = matches;
       const date = (preferences.referenceDate || DateTime.now()).minus({ days: parseInt(days) });
-      return createDateResult(date.startOf('day'));
+      return createDateResult(date, preferences);
     }
   },
   {
     regex: /^(the day after tomorrow|2 days from (now|today))$/i,
-    parse: (): ParseResult => {
-      const date = (DateTime.now().plus({ days: 2 })).startOf('day');
-      return createDateResult(date);
+    parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
+      const date = (preferences.referenceDate || DateTime.now()).plus({ days: 2 });
+      return createDateResult(date, preferences);
     }
   },
   {
     regex: /^(the day before yesterday|2 days ago)$/i,
-    parse: (): ParseResult => {
-      const date = (DateTime.now().minus({ days: 2 })).startOf('day');
-      return createDateResult(date);
+    parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
+      const date = (preferences.referenceDate || DateTime.now()).minus({ days: 2 });
+      return createDateResult(date, preferences);
     }
   },
   {
@@ -81,7 +90,7 @@ const patterns: Pattern[] = [
       const weekday = matches[1].toLowerCase() as keyof typeof WEEKDAYS;
       const targetDay = WEEKDAYS[weekday];
       const date = (preferences.referenceDate || DateTime.now()).set({ weekday: targetDay });
-      return createDateResult(date.startOf('day'));
+      return createDateResult(date, preferences);
     }
   }
 ];

@@ -26,29 +26,21 @@ function findNthWeekOfMonth(year: number, month: number, n: number, weekStartsOn
   // For weekStartsOn = 1 (Monday), we want Monday=0, Tuesday=1, ..., Sunday=6
   const firstDayWeekday = ((firstDayOfMonth.weekday % 7) - weekStartsOn + 7) % 7;
   
-  console.log('First day of month:', firstDayOfMonth.toISO());
-  console.log('First day weekday:', firstDayOfMonth.weekday);
-  console.log('Week starts on:', weekStartsOn);
-  console.log('Normalized weekday:', firstDayWeekday);
-  
   if (n > 0) {
     // For first week, if the first day of month is after our week start day,
     // we need to go back to the previous week's start
     let weekStart = firstDayOfMonth;
     if (firstDayWeekday > 0) {
       weekStart = weekStart.minus({ days: firstDayWeekday });
-      console.log('After subtracting days:', weekStart.toISO());
     }
 
     // If we're too far back (in previous month), move to next week
     if (weekStart.month !== month) {
       weekStart = weekStart.plus({ weeks: 1 });
-      console.log('After moving to next week:', weekStart.toISO());
     }
 
     // Move to the nth week
     weekStart = weekStart.plus({ weeks: n - 1 });
-    console.log('Final week start:', weekStart.toISO());
 
     // If we've gone past the end of the month, return null
     if (weekStart > lastDayOfMonth) return null;
