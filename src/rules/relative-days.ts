@@ -81,6 +81,28 @@ const patterns: Pattern[] = [
     }
   },
   {
+    regex: /(?:^|\s)upcoming\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat)(?:\s|$)/i,
+    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
+      const weekday = matches[1].toLowerCase() as keyof typeof WEEKDAYS;
+      const targetDay = WEEKDAYS[weekday];
+      const date = (preferences.referenceDate || DateTime.now());
+      
+      // Get the next occurrence of the target weekday
+      let result = date.set({ weekday: targetDay });
+      
+      // For "upcoming", if the target day is more than 3 days away,
+      // we want the immediate occurrence, even if it's in the past
+      // This handles cases like "upcoming Tuesday" on a Monday
+      if (result > date && result.diff(date, 'days').days > 3) {
+        result = result.minus({ weeks: 1 });
+      } else if (result <= date) {
+        result = result.plus({ weeks: 1 });
+      }
+      
+      return createDateResult(result, preferences);
+    }
+  },
+  {
     regex: /(?:^|\s)next\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat)(?:\s|$)/i,
     parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       const weekday = matches[1].toLowerCase() as keyof typeof WEEKDAYS;
@@ -89,9 +111,8 @@ const patterns: Pattern[] = [
       
       // Get the next occurrence of the target weekday
       let result = date.set({ weekday: targetDay });
-      if (result <= date) {
-        result = result.plus({ weeks: 1 });
-      }
+      // For "next", we always want next week's occurrence
+      result = result.plus({ weeks: 1 });
       
       return createDateResult(result, preferences);
     }

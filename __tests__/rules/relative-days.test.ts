@@ -46,4 +46,30 @@ describe('Relative Days Rule', () => {
     const result = pattern?.parse(pattern.regex.exec('today')!, { referenceDate, timeZone: 'America/New_York'});
     expect(result?.start?.toUTC().toISO()).toBe('2024-03-14T12:00:00.000Z');
   });
+
+  test('upcoming vs next weekday', () => {
+    let state = createParserState({ referenceDate });
+    state = registerRule(state, relativeDaysRule);
+
+    // Test "upcoming" behavior when target is within 3 days
+    const upcomingFridayPattern = state.rules[0].patterns.find(p => p.regex.test('upcoming friday'));
+    const upcomingFriday = upcomingFridayPattern?.parse(upcomingFridayPattern.regex.exec('upcoming friday')!, { referenceDate });
+    expect(upcomingFriday?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-15'); // Tomorrow
+
+    // Test "upcoming" behavior when target is more than 3 days away
+    const upcomingWednesdayPattern = state.rules[0].patterns.find(p => p.regex.test('upcoming wednesday'));
+    const upcomingWednesday = upcomingWednesdayPattern?.parse(upcomingWednesdayPattern.regex.exec('upcoming wednesday')!, { referenceDate });
+    expect(upcomingWednesday?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-20'); // Next week
+
+    // Compare with "next" behavior
+    const nextFridayPattern = state.rules[0].patterns.find(p => p.regex.test('next friday'));
+    const nextFriday = nextFridayPattern?.parse(nextFridayPattern.regex.exec('next friday')!, { referenceDate });
+    expect(nextFriday?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-22'); // Always next week
+
+    // Test edge case: if today is Monday and we say "upcoming tuesday"
+    const mondayRef = DateTime.fromISO('2024-03-11T12:00:00Z'); // A Monday
+    const upcomingTuesdayPattern = state.rules[0].patterns.find(p => p.regex.test('upcoming tuesday'));
+    const upcomingTuesday = upcomingTuesdayPattern?.parse(upcomingTuesdayPattern.regex.exec('upcoming tuesday')!, { referenceDate: mondayRef });
+    expect(upcomingTuesday?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-12'); // Tomorrow
+  });
 }); 

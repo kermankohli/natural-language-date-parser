@@ -83,6 +83,26 @@ const patterns: Pattern[] = [
         text: matches[0]
       };
     }
+  },
+  {
+    regex: /^upcoming\s+week$/i,
+    parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+      const referenceDate = preferences.referenceDate || DateTime.now();
+      const weekStartsOn = preferences.weekStartsOn || 0;
+
+      // "Upcoming week" always means next week, just like "upcoming Wednesday" means next Wednesday
+      const targetDate = referenceDate.plus({ weeks: 1 });
+      
+      const { start, end } = getWeekRange(targetDate, weekStartsOn);
+
+      return {
+        type: 'range',
+        start,
+        end,
+        confidence: 1,
+        text: 'upcoming week'
+      };
+    }
   }
 ];
 
