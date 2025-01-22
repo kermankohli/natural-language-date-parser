@@ -108,10 +108,9 @@ describe('Natural Language Date Parser', () => {
       expect(result?.start.toISO()).toBe('2024-03-15T15:00:00.000-04:00');
 
       const result2 = parser.parse('next Monday at 3:30 PM', {
-        timeZone: 'America/New_York',
-        debug: true
+        timeZone: 'America/New_York'
       });
-      console.log(result2?.debugTrace)
+
       expect(result2?.start.toISO()).toBe('2024-03-18T15:30:00.000-04:00');
     });
 
@@ -119,14 +118,14 @@ describe('Natural Language Date Parser', () => {
       const result = parser.parse('tomorrow at noon', {
         timeZone: 'America/New_York'
       });
-      expect(result?.start.toISO()).toBe('2024-03-17T12:00:00.000Z');
+      expect(result?.start.toISO()).toBe('2024-03-15T12:00:00.000-04:00');
     });
 
     it('should handle month boundaries in different timezones', () => {
       const result = parser.parse('beginning of next month', {
         timeZone: 'America/New_York'
       });
-      expect(result?.start.toISO()).toBe('2024-04-01T00:00:00.000Z');
+      expect(result?.start.toISO()).toBe('2024-04-01T00:00:00.000-04:00');
     });
 
     it('should handle DST transitions', () => {
@@ -135,27 +134,27 @@ describe('Natural Language Date Parser', () => {
         referenceDate,
         timeZone: 'America/New_York'
       });
-      expect(result?.start.toISO()).toBe('2024-03-14T19:00:00.000Z');
+      expect(result?.start.toUTC().toISO()).toBe('2024-03-14T19:00:00.000Z');
 
       // Test after DST transition
       const result2 = parser.parse('2 AM', {
         referenceDate,
         timeZone: 'Asia/Tokyo'
       });
-      expect(result2?.start.toISO()).toBe('2024-03-14T06:00:00.000Z');
+      expect(result2?.start.toISO()).toBe('2024-03-14T02:00:00.000+09:00');
 
       // Test during DST transition
       const before = parser.parse('3 PM', {
         referenceDate: DateTime.fromISO('2024-03-09T12:00:00Z'), // Day before DST
         timeZone: 'America/New_York'
       });
-      expect(before?.start.toISO()).toBe('2024-03-09T20:00:00.000Z');
+      expect(before?.start.toISO()).toBe('2024-03-09T15:00:00.000-05:00');
 
       const after = parser.parse('3 PM', {
         referenceDate: DateTime.fromISO('2024-03-10T12:00:00Z'), // Day of DST
         timeZone: 'America/New_York'
       });
-      expect(after?.start.toISO()).toBe('2024-03-10T19:00:00.000Z');
+      expect(after?.start.toISO()).toBe('2024-03-10T15:00:00.000-04:00');
     });
   });
 }); 

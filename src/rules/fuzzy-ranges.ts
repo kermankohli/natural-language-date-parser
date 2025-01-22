@@ -149,7 +149,7 @@ export const fuzzyRangesRule: RuleModule = {
       }
     },
     {
-      regex: /^(?:the\s+)?(beginning|middle|mid|end|start|early|late)(?:\s+(?:of|in)\s+(?:the\s+)?|\s+|\-)(year|month|week)(?:\s+end)?$|^(year|month|week)[-\s](beginning|middle|mid|end|start|early|late)$/i,
+      regex: /^(?:the\s+)?(beginning|middle|mid|end|start|early|late)(?:\s+(?:of|in)\s+(?:the\s+)?|\s+|\-)(?:year|month|week)(?:\s+end)?$|^(year|month|week)[-\s](beginning|middle|mid|end|start|early|late)$/i,
       parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
         const [fullMatch, part1, period1, period2, part2] = matches;
         let part = part1 || part2;
@@ -269,6 +269,62 @@ export const fuzzyRangesRule: RuleModule = {
           end,
           confidence: 1.0,
           text: matches[0]
+        };
+      }
+    },
+    {
+      regex: /^(?:the\s+)?(beginning|middle|mid|end|start|early|late)(?:\s+(?:of|in)\s+(?:the\s+)?|\s+|\-)(next\s+month)$/i,
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+        const [fullMatch, part] = matches;
+        if (!part) return null;
+
+        let normalizedPart = part.toLowerCase();
+        if (normalizedPart === 'start' || normalizedPart === 'early') normalizedPart = 'beginning';
+        if (normalizedPart === 'mid') normalizedPart = 'middle';
+        if (normalizedPart === 'late') normalizedPart = 'end';
+
+        const referenceDate = preferences.referenceDate || DateTime.now();
+        let targetMonth = referenceDate.month + 1;
+        let targetYear = referenceDate.year;
+        
+        if (targetMonth > 12) {
+          targetMonth = 1;
+          targetYear++;
+        }
+
+        const monthStart = preferences.timeZone
+          ? DateTime.fromObject(
+              { year: targetYear, month: targetMonth, day: 1 },
+              { zone: preferences.timeZone }
+            )
+          : DateTime.utc(targetYear, targetMonth, 1);
+        
+        let start: DateTime, end: DateTime;
+        if (normalizedPart === 'beginning') {
+          start = monthStart;
+          end = monthStart.plus({ days: 9 }).endOf('day');
+        } else if (normalizedPart === 'middle') {
+          start = monthStart.plus({ days: 10 });
+          end = monthStart.plus({ days: 19 }).endOf('day');
+        } else { // end
+          start = monthStart.plus({ days: 20 }); // This will be the 21st (1 + 20)
+          end = monthStart.endOf('month');
+        }
+
+        Logger.debug('Parsing next month fuzzy range', {
+          part: normalizedPart,
+          targetMonth,
+          targetYear,
+          start: start.toISO(),
+          end: end.toISO()
+        });
+        
+        return {
+          type: 'range',
+          start,
+          end,
+          confidence: 1.0,
+          text: fullMatch
         };
       }
     }

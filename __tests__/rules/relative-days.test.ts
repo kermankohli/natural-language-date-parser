@@ -43,7 +43,7 @@ describe('Relative Days Rule', () => {
     state = registerRule(state, relativeDaysRule);
 
     const pattern = state.rules[0].patterns.find(p => p.regex.test('today'));
-    const result = pattern?.parse(pattern.regex.exec('today')!, { referenceDate, timeZone: 'America/New_York' });
+    const result = pattern?.parse(pattern.regex.exec('today')!, { referenceDate, timeZone: 'America/New_York'});
     expect(result?.start?.toUTC().toISO()).toBe('2024-03-14T12:00:00.000Z');
   });
 }); 

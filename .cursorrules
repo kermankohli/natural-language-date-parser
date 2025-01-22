@@ -1,2 +1,3 @@
 - Delete unused imports and functions
 - Run any debug test cases with LOG_LEVEL=debug
+- Before trying to fix a test case, ensure the test case is correct itself!

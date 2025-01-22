@@ -3,19 +3,18 @@ import { DateParsePreferences, ParseResult, RuleModule, Pattern } from '../types
 import { Logger } from '../utils/Logger';
 
 function createDateResult(date: DateTime, preferences: DateParsePreferences): ParseResult {
-  // If timezone is specified, convert to that timezone first
+  // If timezone is specified, convert to that timezone
   // If no timezone is specified, use UTC
   const targetZone = preferences.timeZone || 'UTC';
-  date = date.setZone(targetZone);
   
-  // Convert back to UTC for storage
-  const utcDate = date.toUTC();
+  // Convert to target timezone preserving the absolute time
+  let result = date.setZone(targetZone);
   
   return {
     type: 'single',
-    start: utcDate,
+    start: result,
     confidence: 1,
-    text: utcDate.toFormat('yyyy-MM-dd')
+    text: result.toFormat('yyyy-MM-dd')
   };
 }
 
