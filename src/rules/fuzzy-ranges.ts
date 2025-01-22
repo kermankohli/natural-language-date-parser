@@ -8,25 +8,30 @@ const MONTHS = {
 };
 
 function getWeekendRange(referenceDate: DateTime, offset: number): { start: DateTime, end: DateTime } {
-  // Find next Saturday
-  const start = referenceDate.startOf('day');
-  const currentDay = start.weekday % 7;
+  // Keep all calculations in the original timezone
+  const start = referenceDate.startOf('day');  
+  // In Luxon: 1=Monday, 7=Sunday, 6=Saturday
+  const currentDay = start.weekday;
   
-  // Calculate days until next Saturday
-  let daysToSaturday = (6 - currentDay) % 7;
+  // Calculate days until next Saturday (weekday 6)
+  let daysToSaturday = ((6 - currentDay + 7) % 7);
   if (daysToSaturday === 0 && offset > 0) {
     daysToSaturday = 7; // If today is Saturday and we want next weekend
   }
   daysToSaturday += offset * 7;
   
-  const weekendStart = start.plus({ days: daysToSaturday });
+  // Calculate weekend dates in local timezone
+  const weekendStart = start.plus({ days: daysToSaturday }).startOf('day');
   const weekendEnd = weekendStart.plus({ days: 1 }).endOf('day');
   
   Logger.debug('Interpreting weekend', {
     referenceDate: referenceDate.toISO(),
+    currentDay,
+    daysToSaturday,
     offset,
     start: weekendStart.toISO(),
-    end: weekendEnd.toISO()
+    end: weekendEnd.toISO(),
+    timezone: referenceDate.zoneName
   });
   
   return { start: weekendStart, end: weekendEnd };
@@ -149,8 +154,8 @@ export const fuzzyRangesRule: RuleModule = {
       }
     },
     {
-      regex: /^(?:the\s+)?(beginning|middle|mid|end|start|early|late)(?:\s+(?:of|in)\s+(?:the\s+)?|\s+|\-)(?:year|month|week)(?:\s+end)?$|^(year|month|week)[-\s](beginning|middle|mid|end|start|early|late)$/i,
-      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+        regex: /^(?:the\s+)?(beginning|middle|mid|end|start|early|late)(?:\s+(?:of|in)\s+(?:the\s+)?|\s+|\-)(year|month|week)(?:\s+end)?$|^(year|month|week)[-\s](beginning|middle|mid|end|start|early|late)$/i,
+        parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
         const [fullMatch, part1, period1, period2, part2] = matches;
         let part = part1 || part2;
         let period = period1 || period2;

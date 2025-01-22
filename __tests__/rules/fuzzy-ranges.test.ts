@@ -82,4 +82,47 @@ describe('Fuzzy Ranges Rule', () => {
       expect(result?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-20');
     }
   });
+
+  
+  describe('weekend parsing', () => {
+    test('this weekend', () => {
+      let state = createParserState({ referenceDate });
+      state = registerRule(state, fuzzyRangesRule);
+
+      const pattern = state.rules[0].patterns.find(p => p.regex.test('this weekend'));
+      const result = pattern?.parse(pattern.regex.exec('this weekend')!, { referenceDate });
+      expect(result?.start.toISO()?.slice(0, 10)).toBe('2024-03-16');
+      expect(result?.end?.toISO()?.slice(0, 10)).toBe('2024-03-17');
+    });
+
+    test('next weekend', () => {
+      let state = createParserState({ referenceDate });
+      state = registerRule(state, fuzzyRangesRule);
+
+      const pattern = state.rules[0].patterns.find(p => p.regex.test('next weekend'));
+      const result = pattern?.parse(pattern.regex.exec('next weekend')!, { referenceDate });
+      expect(result?.start?.toISO()?.slice(0, 10)).toBe('2024-03-23');
+      expect(result?.end?.toISO()?.slice(0, 10)).toBe('2024-03-24');
+    });
+
+    test('weekends in New York timezone', () => {
+      let state = createParserState({ referenceDate });
+      state = registerRule(state, fuzzyRangesRule);
+
+      const pattern = state.rules[0].patterns.find(p => p.regex.test('this weekend'));
+      const result = pattern?.parse(pattern.regex.exec('this weekend')!, { 
+        referenceDate,
+        timeZone: 'America/New_York'
+      });
+      expect(result?.start?.toISO()).toBe('2024-03-16T00:00:00.000+08:00'); // Midnight Saturday ET = 4am UTC
+      expect(result?.end?.toISO()).toBe('2024-03-17T23:59:59.999+08:00'); // End of Sunday ET
+
+      const nextResult = pattern?.parse(pattern.regex.exec('next weekend')!, {
+        referenceDate,
+        timeZone: 'America/New_York'
+      });
+      expect(nextResult?.start?.toISO()).toBe('2024-03-23T00:00:00.000+08:00');
+      expect(nextResult?.end?.toISO()).toBe('2024-03-24T23:59:59.999+08:00');
+    });
+  });
 }); 
