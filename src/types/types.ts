@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon';
+import { ParseTrace } from '../utils/debug-trace';
 
 
 /**
@@ -23,6 +24,7 @@ export interface ParseResult {
   end?: DateTime;
   confidence: number;
   text: string;
+  debugTrace?: ParseTrace;
 }
 
 export interface ParserState {

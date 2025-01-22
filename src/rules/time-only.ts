@@ -41,6 +41,19 @@ const patterns: Pattern[] = [
     }
   },
   {
+    regex: /(?:^|\s)(?:at\s+)?(\d{1,2})(?:\s*)(AM|PM)(?:\s|$)/i,
+    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+      let [_, hours, meridiem] = matches;
+      let hour = parseInt(hours);
+
+      if (hour > 12) return null;
+      if (meridiem.toUpperCase() === 'PM' && hour < 12) hour += 12;
+      if (meridiem.toUpperCase() === 'AM' && hour === 12) hour = 0;
+
+      return createTimeResult(hour, 0, preferences);
+    }
+  },
+  {
     regex: /(?:^|\s)(?:at\s+)?noon(?:\s|$)/i,
     parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       return createTimeResult(12, 0, preferences);

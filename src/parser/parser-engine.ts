@@ -25,43 +25,11 @@ export function registerRule(state: ParserState, rule: RuleModule): ParserState 
   };
 }
 
-const intermediateToResult = (intermediate: IntermediateParse, rule: RuleModule, prefs: DateParsePreferences): ParseResult | null => {
-  // If the rule has an interpret function, use it
-  if (rule.interpret) {
-    return rule.interpret(intermediate, prefs);
-  }
-
-  // Otherwise, convert directly if we have the required fields
-  if (intermediate.start && intermediate.text && intermediate.confidence) {
-    if (intermediate.type === 'range' && intermediate.end) {
-      return {
-        type: 'range',
-        start: intermediate.start,
-        end: intermediate.end,
-        text: intermediate.text,
-        confidence: intermediate.confidence
-      };
-    }
-    return {
-      type: 'single',
-      start: intermediate.start,
-      end: intermediate.end,
-      text: intermediate.text,
-      confidence: intermediate.confidence
-    };
-  }
-
-  return null;
-};
-
 export function parse(state: ParserState, input: string, preferences?: DateParsePreferences): ParseResult | null {
   const mergedPrefs = {
     ...state.defaultPreferences,
     ...preferences
   };
-
-  // Regular parsing flow
-  const tokens = tokenize(input, state.tokenizerOptions);
 
   if (mergedPrefs.debug) {
     debugTrace.startTrace(input);
@@ -132,14 +100,33 @@ export function parse(state: ParserState, input: string, preferences?: DateParse
       text: input
     };
 
+    if (mergedPrefs.debug) {
+      const trace = debugTrace.getTrace();
+      if (trace) {
+        combinedResult.debugTrace = trace;
+      }
+    }
+
     return resolvePreferences(combinedResult, mergedPrefs);
   }
 
   // Return date or time result if only one exists
   if (dateResult) {
+    if (mergedPrefs.debug) {
+      const trace = debugTrace.getTrace();
+      if (trace) {
+        dateResult.debugTrace = trace;
+      }
+    }
     return resolvePreferences(dateResult, mergedPrefs);
   }
   if (timeResult) {
+    if (mergedPrefs.debug) {
+      const trace = debugTrace.getTrace();
+      if (trace) {
+        timeResult.debugTrace = trace;
+      }
+    }
     return resolvePreferences(timeResult, mergedPrefs);
   }
 

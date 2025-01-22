@@ -104,12 +104,15 @@ describe('Natural Language Date Parser', () => {
       const result = parser.parse('tomorrow at 3 PM', {
         timeZone: 'America/New_York'
       });
-      expect(result?.start.toISO()).toBe('2024-03-15T15:00:00.000Z');
+
+      expect(result?.start.toISO()).toBe('2024-03-15T15:00:00.000-04:00');
 
       const result2 = parser.parse('next Monday at 3:30 PM', {
-        timeZone: 'America/New_York'
+        timeZone: 'America/New_York',
+        debug: true
       });
-      expect(result2?.start.toISO()).toBe('2024-03-18T15:30:00.000Z');
+      console.log(result2?.debugTrace)
+      expect(result2?.start.toISO()).toBe('2024-03-18T15:30:00.000-04:00');
     });
 
     it('should handle special times in different timezones', () => {

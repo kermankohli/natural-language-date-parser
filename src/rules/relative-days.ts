@@ -86,8 +86,15 @@ const patterns: Pattern[] = [
     parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
       const weekday = matches[1].toLowerCase() as keyof typeof WEEKDAYS;
       const targetDay = WEEKDAYS[weekday];
-      const date = (preferences.referenceDate || DateTime.now()).set({ weekday: targetDay });
-      return createDateResult(date, preferences);
+      const date = (preferences.referenceDate || DateTime.now());
+      
+      // Get the next occurrence of the target weekday
+      let result = date.set({ weekday: targetDay });
+      if (result <= date) {
+        result = result.plus({ weeks: 1 });
+      }
+      
+      return createDateResult(result, preferences);
     }
   }
 ];
