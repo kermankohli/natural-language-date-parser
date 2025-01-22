@@ -44,6 +44,7 @@ export function parse(state: ParserState, input: string, preferences?: DateParse
   let dateResult: ParseResult | null = null;
   let timeResult: ParseResult | null = null;
   let timeRangeResult: ParseResult | null = null;
+  let timeOfDayResult: ParseResult | null = null;
 
   for (const rule of state.rules) {
     // Try each pattern in the rule
@@ -62,10 +63,26 @@ export function parse(state: ParserState, input: string, preferences?: DateParse
         try {
           const result = pattern.parse(matches, mergedPrefs);
           if (result) {
+            Logger.debug('Rule match result:', {
+              ruleName: rule.name,
+              resultType: result.type,
+              text: result.text,
+              start: result.start?.toISO(),
+              end: result.end?.toISO(),
+              confidence: result.confidence
+            });
+
             if (rule.name === 'time-ranges') {
               timeRangeResult = result;
             } else if (rule.name === 'time-only') {
               timeResult = result;
+            } else if (rule.name === 'time-of-day') {
+              timeOfDayResult = result;
+              Logger.debug('Time of day result:', {
+                type: result.type,
+                start: result.start?.toISO(),
+                end: result.end?.toISO()
+              });
             } else {
               dateResult = result;
             }
@@ -92,21 +109,46 @@ export function parse(state: ParserState, input: string, preferences?: DateParse
 
   // Return time range result directly if no date result
   if (timeRangeResult && !dateResult) {
+    Logger.debug('Using time range result directly');
     result = resolvePreferences(timeRangeResult, mergedPrefs);
   }
   // Combine date and time results if both exist
   else if (dateResult) {
-    if (timeRangeResult) {
+    if (timeOfDayResult) {
+      Logger.debug('Combining date result with time of day:', {
+        dateType: dateResult.type,
+        timeOfDayType: timeOfDayResult.type
+      });
+      result = resolvePreferences(dateResult, mergedPrefs, timeOfDayResult);
+    } else if (timeRangeResult) {
+      Logger.debug('Combining date result with time range');
       result = resolvePreferences(dateResult, mergedPrefs, timeRangeResult);
     } else if (timeResult) {
+      Logger.debug('Combining date result with time');
       result = resolvePreferences(dateResult, mergedPrefs, timeResult);
     } else {
+      Logger.debug('Using date result only');
       result = resolvePreferences(dateResult, mergedPrefs);
     }
   }
   // Return time result if no date result
-  else if (timeResult) {
+  else if (timeOfDayResult) {
+    Logger.debug('Using time of day result directly');
+    result = resolvePreferences(timeOfDayResult, mergedPrefs);
+  } else if (timeResult) {
+    Logger.debug('Using time result directly');
     result = resolvePreferences(timeResult, mergedPrefs);
+  }
+
+  // Log final result
+  if (result) {
+    Logger.debug('Final parse result:', {
+      type: result.type,
+      text: result.text,
+      start: result.start?.toISO(),
+      end: result.end?.toISO(),
+      confidence: result.confidence
+    });
   }
 
   // Attach debug trace if in debug mode

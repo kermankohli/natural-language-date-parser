@@ -5,10 +5,42 @@ import { ParseTrace } from '../utils/debug-trace';
 /**
  * Configuration options for date parsing
  */
+export interface TimeOfDayPreferences {
+  morning: {
+    start: number;  // hour in 24h format (e.g. 6 for 6am)
+    end: number;    // hour in 24h format (e.g. 12 for 12pm)
+    early: { start: number; end: number };
+    mid: { start: number; end: number };
+    late: { start: number; end: number };
+  };
+  afternoon: {
+    start: number;
+    end: number;
+    early: { start: number; end: number };
+    mid: { start: number; end: number };
+    late: { start: number; end: number };
+  };
+  evening: {
+    start: number;
+    end: number;
+    early: { start: number; end: number };
+    mid: { start: number; end: number };
+    late: { start: number; end: number };
+  };
+  night: {
+    start: number;
+    end: number;
+    early: { start: number; end: number };
+    mid: { start: number; end: number };
+    late: { start: number; end: number };
+  };
+}
+
 export interface DateParsePreferences {
   referenceDate?: DateTime;        // Date to use as "now" for relative dates
   timeZone?: string;           // IANA time zone identifier
   weekStartsOn?: number;        // 0 = Sunday, 1 = Monday
+  timeOfDay?: TimeOfDayPreferences;
   parser?: {
     parse: (input: string, prefs: DateParsePreferences) => ParseResult | null;
   };

@@ -10,12 +10,14 @@ import { ordinalWeeksRule } from './rules/ordinal-weeks';
 import { relativeWeeksRule } from './rules/relative-weeks';
 import { fuzzyRangesRule } from './rules/fuzzy-ranges';
 import { timeRangesRule } from './rules/time-ranges';
+import { timeOfDayRule } from './rules/time-of-day';
 
 const defaultRules = [
   absoluteDatesRule,  // ISO dates, YYYY-MM-DD etc
   dateOnlyRule,       // Date parsing
   timeOnlyRule,       // Time expressions
   timeRangesRule,     // Time ranges (3 PM to 5 PM)
+  timeOfDayRule,      // Time of day expressions (morning, afternoon, etc.)
   relativeDaysRule,   // today, tomorrow, etc
   ordinalDaysRule,    // 1st of March, etc
   partialMonthRule,   // early/mid/late month

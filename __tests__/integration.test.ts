@@ -218,4 +218,104 @@ describe('Natural Language Date Parser', () => {
       expect(after?.start.toISO()).toBe('2024-03-10T15:00:00.000-04:00');
     });
   });
+
+  describe('Time of Day Integration', () => {
+    test('should parse date with time of day', () => {
+      const result = parser.parse('tomorrow morning', { referenceDate });
+      expect(result).not.toBeNull();
+      expect(result?.type).toBe('range');
+      expect(result?.start.toISO()).toBe('2024-03-15T06:00:00.000Z');
+      expect(result?.end?.toISO()).toBe('2024-03-15T12:00:00.000Z');
+    });
+
+    test('should parse date with early/mid/late time of day', () => {
+      const earlyResult = parser.parse('tomorrow early morning', { referenceDate });
+      expect(earlyResult).not.toBeNull();
+      expect(earlyResult?.type).toBe('range');
+      expect(earlyResult?.start.hour).toBe(6);
+      expect(earlyResult?.end?.hour).toBe(8);
+
+      const midResult = parser.parse('tomorrow mid afternoon', { referenceDate });
+      expect(midResult).not.toBeNull();
+      expect(midResult?.type).toBe('range');
+      expect(midResult?.start.hour).toBe(14);
+      expect(midResult?.end?.hour).toBe(15);
+
+      const lateResult = parser.parse('tomorrow late evening', { referenceDate });
+      expect(lateResult).not.toBeNull();
+      expect(lateResult?.type).toBe('range');
+      expect(lateResult?.start.hour).toBe(19);
+      expect(lateResult?.end?.hour).toBe(21);
+    });
+
+    test('should override time of day with specific time', () => {
+      const result = parser.parse('tomorrow morning at 9am', { referenceDate });
+      expect(result).not.toBeNull();
+      expect(result?.type).toBe('single');
+      expect(result?.start.toISO()).toBe('2024-03-15T09:00:00.000Z');
+      expect(result?.end).toBeUndefined();
+    });
+
+    test('should handle custom time of day preferences', () => {
+      const customPreferences = {
+        morning: {
+          start: 5,
+          end: 11,
+          early: { start: 5, end: 7 },
+          mid: { start: 7, end: 9 },
+          late: { start: 9, end: 11 }
+        },
+        afternoon: {
+          start: 11,
+          end: 16,
+          early: { start: 11, end: 13 },
+          mid: { start: 13, end: 14 },
+          late: { start: 14, end: 16 }
+        },
+        evening: {
+          start: 16,
+          end: 20,
+          early: { start: 16, end: 17 },
+          mid: { start: 17, end: 18 },
+          late: { start: 18, end: 20 }
+        },
+        night: {
+          start: 20,
+          end: 5,
+          early: { start: 20, end: 22 },
+          mid: { start: 22, end: 1 },
+          late: { start: 1, end: 5 }
+        }
+      };
+
+      const result = parser.parse('tomorrow morning', { 
+        referenceDate,
+        timeOfDay: customPreferences
+      });
+      expect(result).not.toBeNull();
+      expect(result?.type).toBe('range');
+      expect(result?.start.hour).toBe(5);
+      expect(result?.end?.hour).toBe(11);
+    });
+
+    test('should handle timezone correctly', () => {
+      const result = parser.parse('tomorrow morning', { 
+        referenceDate,
+        timeZone: 'America/New_York'
+      });
+      expect(result).not.toBeNull();
+      expect(result?.type).toBe('range');
+      expect(result?.start.zoneName).toBe('America/New_York');
+      expect(result?.start.hour).toBe(6);
+      expect(result?.end?.hour).toBe(12);
+    });
+
+    test('should handle night crossing midnight', () => {
+      const result = parser.parse('tomorrow night', { referenceDate });
+      expect(result).not.toBeNull();
+      expect(result?.type).toBe('range');
+      expect(result?.start.toISO()).toBe('2024-03-15T21:00:00.000Z');
+      expect(result?.end?.toISO()).toBe('2024-03-16T06:00:00.000Z');
+    });
+  });
 }); 
