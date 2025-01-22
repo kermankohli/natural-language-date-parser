@@ -43,6 +43,7 @@ export function parse(state: ParserState, input: string, preferences?: DateParse
   // Try each rule module
   let dateResult: ParseResult | null = null;
   let timeResult: ParseResult | null = null;
+  let timeRangeResult: ParseResult | null = null;
 
   for (const rule of state.rules) {
     // Try each pattern in the rule
@@ -50,11 +51,10 @@ export function parse(state: ParserState, input: string, preferences?: DateParse
       const matches = pattern.regex.exec(input);
 
       if (matches) {
-
         if (mergedPrefs.debug) {
           debugTrace.addRuleMatch({
             ruleName: rule.name,
-            input: matches.join(' '),
+            input: matches[0],
             matched: true
           });
         }
@@ -62,8 +62,9 @@ export function parse(state: ParserState, input: string, preferences?: DateParse
         try {
           const result = pattern.parse(matches, mergedPrefs);
           if (result) {
-
-            if (rule.name === 'time-only') {
+            if (rule.name === 'time-ranges') {
+              timeRangeResult = result;
+            } else if (rule.name === 'time-only') {
               timeResult = result;
             } else {
               dateResult = result;
@@ -87,48 +88,31 @@ export function parse(state: ParserState, input: string, preferences?: DateParse
     debugTrace.endTrace();
   }
 
+  let result: ParseResult | null = null;
+
+  // Return time range result directly if no date result
+  if (timeRangeResult && !dateResult) {
+    result = resolvePreferences(timeRangeResult, mergedPrefs);
+  }
   // Combine date and time results if both exist
-  if (dateResult && timeResult) {
-    const combinedResult: ParseResult = {
-      type: 'single',
-      start: dateResult.start.set({
-        hour: timeResult.start.hour,
-        minute: timeResult.start.minute,
-        second: timeResult.start.second
-      }),
-      confidence: Math.min(dateResult.confidence, timeResult.confidence),
-      text: input
-    };
-
-    if (mergedPrefs.debug) {
-      const trace = debugTrace.getTrace();
-      if (trace) {
-        combinedResult.debugTrace = trace;
-      }
+  else if (dateResult) {
+    if (timeRangeResult) {
+      result = resolvePreferences(dateResult, mergedPrefs, timeRangeResult);
+    } else if (timeResult) {
+      result = resolvePreferences(dateResult, mergedPrefs, timeResult);
+    } else {
+      result = resolvePreferences(dateResult, mergedPrefs);
     }
-
-    return resolvePreferences(combinedResult, mergedPrefs);
+  }
+  // Return time result if no date result
+  else if (timeResult) {
+    result = resolvePreferences(timeResult, mergedPrefs);
   }
 
-  // Return date or time result if only one exists
-  if (dateResult) {
-    if (mergedPrefs.debug) {
-      const trace = debugTrace.getTrace();
-      if (trace) {
-        dateResult.debugTrace = trace;
-      }
-    }
-    return resolvePreferences(dateResult, mergedPrefs);
-  }
-  if (timeResult) {
-    if (mergedPrefs.debug) {
-      const trace = debugTrace.getTrace();
-      if (trace) {
-        timeResult.debugTrace = trace;
-      }
-    }
-    return resolvePreferences(timeResult, mergedPrefs);
+  // Attach debug trace if in debug mode
+  if (result && mergedPrefs.debug) {
+    result.debugTrace = debugTrace.getTrace() || undefined;
   }
 
-  return null;
+  return result;
 } 

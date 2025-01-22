@@ -9,11 +9,13 @@ import { partialMonthRule } from './rules/partial-month';
 import { ordinalWeeksRule } from './rules/ordinal-weeks';
 import { relativeWeeksRule } from './rules/relative-weeks';
 import { fuzzyRangesRule } from './rules/fuzzy-ranges';
+import { timeRangesRule } from './rules/time-ranges';
 
 const defaultRules = [
   absoluteDatesRule,  // ISO dates, YYYY-MM-DD etc
   dateOnlyRule,       // Date parsing
   timeOnlyRule,       // Time expressions
+  timeRangesRule,     // Time ranges (3 PM to 5 PM)
   relativeDaysRule,   // today, tomorrow, etc
   ordinalDaysRule,    // 1st of March, etc
   partialMonthRule,   // early/mid/late month

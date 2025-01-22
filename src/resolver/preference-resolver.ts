@@ -9,63 +9,99 @@ interface ResolverContext {
   weekStartsOn: 0 | 1;
 }
 
-export function resolvePreferences(result: ParseResult, preferences: DateParsePreferences, timeResult?: ParseResult): ParseResult {
-  const context: ResolverContext = {
-    referenceDate: preferences.referenceDate || DateTime.now(),
-    timeZone: preferences.timeZone,
-    weekStartsOn: preferences.weekStartsOn === 1 ? 1 : 0
-  };
+function applyTimeToDate(date: DateTime, time: DateTime): DateTime {
+  return date.set({
+    hour: time.hour,
+    minute: time.minute,
+    second: time.second
+  });
+}
 
-  // If we have a time result, combine it with the date result
-  if (timeResult) {
-    // First convert both results to the target timezone if specified
-    if (context.timeZone) {
-      // For times, we want to preserve the wall time in the target timezone
-      // This means 3:30 PM in UTC should become 3:30 PM in NY
-      timeResult.start = timeResult.start.setZone(context.timeZone, { keepLocalTime: true });
-      result.start = result.start.setZone(context.timeZone);
-    }
+function handleTimeRange(dateResult: ParseResult, timeResult: ParseResult): ParseResult {
+  if (dateResult.type === 'single') {
+    // Single date with time range
+    const result = {
+      type: 'range' as const,
+      start: applyTimeToDate(dateResult.start, timeResult.start),
+      end: applyTimeToDate(dateResult.start, timeResult.end!),
+      confidence: Math.min(dateResult.confidence, timeResult.confidence),
+      text: `${dateResult.text} from ${timeResult.text}`,
+      debugTrace: dateResult.debugTrace || timeResult.debugTrace
+    };
 
-    // Then combine them
-    result.start = result.start.set({
-      hour: timeResult.start.hour,
-      minute: timeResult.start.minute,
-      second: timeResult.start.second,
-      millisecond: timeResult.start.millisecond
-    });
-
-    // Convert final result to UTC unless a specific timezone is requested
-    if (!context.timeZone) {
-      result.start = result.start.toUTC();
+    // If end time is before start time, assume it's the next day
+    if (result.end < result.start) {
+      result.end = result.end.plus({ days: 1 });
     }
 
     return result;
+  } else {
+    // Date range with time range - apply start time to start date and end time to end date
+    return {
+      type: 'range' as const,
+      start: applyTimeToDate(dateResult.start, timeResult.start),
+      end: applyTimeToDate(dateResult.end!, timeResult.end!),
+      confidence: Math.min(dateResult.confidence, timeResult.confidence),
+      text: `${dateResult.text} from ${timeResult.text}`,
+      debugTrace: dateResult.debugTrace || timeResult.debugTrace
+    };
+  }
+}
+
+function handleSingleTime(dateResult: ParseResult, timeResult: ParseResult): ParseResult {
+  if (dateResult.type === 'single') {
+    // Single date with single time
+    return {
+      type: 'single' as const,
+      start: applyTimeToDate(dateResult.start, timeResult.start),
+      confidence: Math.min(dateResult.confidence, timeResult.confidence),
+      text: `${dateResult.text} at ${timeResult.text}`,
+      debugTrace: dateResult.debugTrace || timeResult.debugTrace
+    };
+  } else {
+    // Date range with single time - apply same time to both start and end
+    return {
+      type: 'range' as const,
+      start: applyTimeToDate(dateResult.start, timeResult.start),
+      end: applyTimeToDate(dateResult.end!, timeResult.start),
+      confidence: Math.min(dateResult.confidence, timeResult.confidence),
+      text: `${dateResult.text} at ${timeResult.text}`,
+      debugTrace: dateResult.debugTrace || timeResult.debugTrace
+    };
+  }
+}
+
+function applyTimeZone(result: ParseResult, timeZone: string): ParseResult {
+  // If the time is not midnight (00:00), we want to preserve the time
+  const hasTimeComponent = result.start.hour !== 0 || result.start.minute !== 0;
+
+  // For all cases, we want to preserve the wall time in the target timezone
+  result.start = result.start.setZone(timeZone, { keepLocalTime: true });
+  
+  if (result.end) {
+    result.end = result.end.setZone(timeZone, { keepLocalTime: true });
   }
 
-  // For single results (just date or just time)
+  return result;
+}
+
+export function resolvePreferences(result: ParseResult, preferences: DateParsePreferences, timeResult?: ParseResult): ParseResult {
+  const context = {
+    timeZone: preferences.timeZone,
+    referenceDate: preferences.referenceDate || DateTime.now()
+  };
+
+  // If we have a time result and a date result, combine them
+  if (timeResult) {
+    result = timeResult.type === 'range' 
+      ? handleTimeRange(result, timeResult)
+      : handleSingleTime(result, timeResult);
+  }
+
+  // Apply timezone if specified, otherwise convert to UTC
   if (context.timeZone) {
-    // If the time is not midnight (00:00), we want to preserve the time
-    const hasTimeComponent = result.start.hour !== 0 || result.start.minute !== 0;
-
-    // Convert to the target timezone
-    if (hasTimeComponent) {
-      // For times, we want to preserve the wall time in the target timezone
-      // This means 3:30 PM in UTC should become 3:30 PM in NY
-      result.start = result.start.setZone(context.timeZone, { keepLocalTime: true });
-    } else {
-      // For dates without times, we want midnight in UTC to become midnight in the target timezone
-      result.start = result.start.setZone(context.timeZone, { keepLocalTime: true });
-    }
-
-    if (result.end) {
-      if (hasTimeComponent) {
-        result.end = result.end.setZone(context.timeZone, { keepLocalTime: true });
-      } else {
-        result.end = result.end.setZone(context.timeZone, { keepLocalTime: true });
-      }
-    }
+    result = applyTimeZone(result, context.timeZone);
   } else {
-    // If no timezone specified, convert to UTC
     result.start = result.start.toUTC();
     if (result.end) {
       result.end = result.end.toUTC();

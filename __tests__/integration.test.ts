@@ -99,6 +99,67 @@ describe('Natural Language Date Parser', () => {
     });
   });
 
+  describe('time ranges', () => {
+    it('should parse time ranges', () => {
+      const result = parser.parse('3:30 PM to 5:00 PM');
+      expect(result?.start.toUTC().hour).toBe(15);
+      expect(result?.start.toUTC().minute).toBe(30);
+      expect(result?.end?.toUTC().hour).toBe(17);
+      expect(result?.end?.toUTC().minute).toBe(0);
+    });
+
+    it('should parse time ranges with dates', () => {
+      const result = parser.parse('next tuesday from 3pm to 5pm', {debug: true});
+      const nextTuesday = referenceDate.plus({ days: ((2 - referenceDate.weekday + 7) % 7) });
+      
+      expect(result?.start.toUTC().toISO()?.slice(0, 10))
+        .toBe(nextTuesday.toUTC().toISO()?.slice(0, 10));
+      expect(result?.start.toUTC().hour).toBe(15);
+      expect(result?.start.toUTC().minute).toBe(0);
+      expect(result?.end?.toUTC().hour).toBe(17);
+      expect(result?.end?.toUTC().minute).toBe(0);
+      expect(result?.end?.toUTC().toISO()?.slice(0, 10))
+        .toBe(nextTuesday.toUTC().toISO()?.slice(0, 10));
+    });
+
+    it('should handle overnight ranges', () => {
+      const result = parser.parse('next tuesday from 10pm to 2am');
+      const nextTuesday = referenceDate.plus({ days: ((2 - referenceDate.weekday + 7) % 7) });
+      
+      expect(result?.start.toUTC().toISO()?.slice(0, 10))
+        .toBe(nextTuesday.toUTC().toISO()?.slice(0, 10));
+      expect(result?.start.toUTC().hour).toBe(22);
+      expect(result?.start.toUTC().minute).toBe(0);
+      expect(result?.end?.toUTC().hour).toBe(2);
+      expect(result?.end?.toUTC().minute).toBe(0);
+      expect(result?.end?.toUTC().toISO()?.slice(0, 10))
+        .toBe(nextTuesday.plus({ days: 1 }).toUTC().toISO()?.slice(0, 10));
+    });
+
+    it('should handle timezone-specific ranges', () => {
+      const result = parser.parse('next tuesday from 3pm to 5pm', {
+        timeZone: 'America/New_York'
+      });
+      const nextTuesday = referenceDate.setZone('America/New_York').plus({ days: ((2 - referenceDate.weekday + 7) % 7) });
+      
+      expect(result?.start.zoneName).toBe('America/New_York');
+      expect(result?.start.hour).toBe(15);
+      expect(result?.start.minute).toBe(0);
+      expect(result?.end?.hour).toBe(17);
+      expect(result?.end?.minute).toBe(0);
+      expect(result?.start.toISO()?.slice(0, 10))
+        .toBe(nextTuesday.toISO()?.slice(0, 10));
+    });
+
+    it('should handle alternative range formats', () => {
+      const result = parser.parse('between 3pm-5pm');
+      expect(result?.start.toUTC().hour).toBe(15);
+      expect(result?.start.toUTC().minute).toBe(0);
+      expect(result?.end?.toUTC().hour).toBe(17);
+      expect(result?.end?.toUTC().minute).toBe(0);
+    });
+  });
+
   describe('timezone handling', () => {
     it('should handle timezone conversions', () => {
       const result = parser.parse('tomorrow at 3 PM', {
