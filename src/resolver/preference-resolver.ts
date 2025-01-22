@@ -53,15 +53,15 @@ export function resolvePreferences(result: ParseResult, preferences: DateParsePr
       // This means 3:30 PM in UTC should become 3:30 PM in NY
       result.start = result.start.setZone(context.timeZone, { keepLocalTime: true });
     } else {
-      // For dates without times, we want to keep the same date in the target timezone
-      result.start = result.start.setZone(context.timeZone);
+      // For dates without times, we want midnight in UTC to become midnight in the target timezone
+      result.start = result.start.setZone(context.timeZone, { keepLocalTime: true });
     }
 
     if (result.end) {
       if (hasTimeComponent) {
         result.end = result.end.setZone(context.timeZone, { keepLocalTime: true });
       } else {
-        result.end = result.end.setZone(context.timeZone);
+        result.end = result.end.setZone(context.timeZone, { keepLocalTime: true });
       }
     }
   } else {

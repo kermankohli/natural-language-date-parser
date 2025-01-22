@@ -149,7 +149,7 @@ export const fuzzyRangesRule: RuleModule = {
       }
     },
     {
-      regex: /^(?:the\s+)?(beginning|middle|mid|end|start|early|late)(?:\s+(?:of|in)\s+(?:the\s+)?|\s+|\-)(?:year|month|week)(?:\s+end)?$|^(year|month|week)[-\s](beginning|middle|mid|end|start|early|late)$/i,
+      regex: /^(?:the\s+)?(beginning|middle|mid|end|start|early|late)(?:\s+(?:of|in)\s+(?:the\s+)?|\s+|\-)(year|month|week)(?:\s+end)?$|^(year|month|week)[-\s](beginning|middle|mid|end|start|early|late)$/i,
       parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
         const [fullMatch, part1, period1, period2, part2] = matches;
         let part = part1 || part2;
@@ -292,12 +292,7 @@ export const fuzzyRangesRule: RuleModule = {
           targetYear++;
         }
 
-        const monthStart = preferences.timeZone
-          ? DateTime.fromObject(
-              { year: targetYear, month: targetMonth, day: 1 },
-              { zone: preferences.timeZone }
-            )
-          : DateTime.utc(targetYear, targetMonth, 1);
+        const monthStart = DateTime.utc(targetYear, targetMonth, 1);
         
         let start: DateTime, end: DateTime;
         if (normalizedPart === 'beginning') {
