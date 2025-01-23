@@ -11,8 +11,6 @@ describe('Relative Weeks Rule', () => {
 
     const pattern = state.rules[0].patterns.find(p => p.regex.test('this week'));
     const result = pattern?.parse(pattern.regex.exec('this week')!, { referenceDate, debug: true });
-    console.log(pattern);
-    console.log(result);
     expect(result?.type).toBe('range');
     expect((result?.value as any).start.toISO()?.slice(0, 10)).toBe('2024-03-11');
     expect((result?.value as any).end?.toISO()?.slice(0, 10)).toBe('2024-03-17');

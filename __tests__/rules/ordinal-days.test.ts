@@ -201,6 +201,105 @@ describe('Ordinal Days Rule', () => {
   });
 });
 
+describe('Relative Ordinal Expressions', () => {
+  const referenceDate = DateTime.fromISO('2023-03-14T12:00:00Z');
+
+  describe('Before/Until expressions', () => {
+    test('simple until', () => {
+      const input = 'until the 15th';
+      const pattern = findPatternForInput(input);
+      const matches = pattern?.regex.exec(input);
+      
+      if (matches && pattern) {
+        const result = pattern.parse(matches, { referenceDate });
+        expect(result?.type).toBe('range');
+        expect(result?.value).toBeDefined();
+        if (result?.type === 'range' && result.value && typeof result.value === 'object' && 'start' in result.value) {
+          expect(result.value.start.toUTC().toISO()?.slice(0, 10)).toBe('2023-03-14');
+          expect(result.value.end?.toUTC().toISO()?.slice(0, 10)).toBe('2023-03-15');
+        }
+      }
+    });
+
+    test('until with month', () => {
+      const input = 'until the 8th of jan';
+      const pattern = findPatternForInput(input);
+      const matches = pattern?.regex.exec(input);
+      
+      if (matches && pattern) {
+        const result = pattern.parse(matches, { referenceDate });
+        expect(result?.type).toBe('range');
+        if (result?.type === 'range' && result.value && typeof result.value === 'object' && 'start' in result.value) {
+          expect(result.value.start.toUTC().toISO()?.slice(0, 10)).toBe('2023-03-14');
+          expect(result.value.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-01-08');
+        }
+      }
+    });
+
+    test('anytime until variations', () => {
+      const input = 'anytime from now until the 15th';
+      const pattern = findPatternForInput(input);
+      const matches = pattern?.regex.exec(input);
+      
+      if (matches && pattern) {
+        const result = pattern.parse(matches, { referenceDate });
+        expect(result?.type).toBe('range');
+        if (result?.type === 'range' && result.value && typeof result.value === 'object' && 'start' in result.value) {
+          expect(result.value.start.toUTC().toISO()?.slice(0, 10)).toBe('2023-03-14');
+          expect(result.value.end?.toUTC().toISO()?.slice(0, 10)).toBe('2023-03-15');
+        }
+      }
+    });
+  });
+
+  describe('After/From expressions', () => {
+    test('starting from - future date', () => {
+      const input = 'starting from the 26th';
+      const pattern = findPatternForInput(input);
+      const matches = pattern?.regex.exec(input);
+      
+      if (matches && pattern) {
+        const result = pattern.parse(matches, { referenceDate });
+        expect(result?.type).toBe('range');
+        if (result?.type === 'range' && result.value && typeof result.value === 'object' && 'start' in result.value) {
+          expect(result.value.start.toUTC().toISO()?.slice(0, 10)).toBe('2023-03-26');
+          expect(result.value.end?.toUTC().toISO()?.slice(0, 10)).toBe('2023-04-26');
+        }
+      }
+    });
+
+    test('starting from - past date (should move to next month)', () => {
+      const input = 'from the 14th';
+      const pattern = findPatternForInput(input);
+      const matches = pattern?.regex.exec(input);
+      
+      if (matches && pattern) {
+        const result = pattern.parse(matches, { referenceDate });
+        expect(result?.type).toBe('range');
+        if (result?.type === 'range' && result.value && typeof result.value === 'object' && 'start' in result.value) {
+          expect(result.value.start.toUTC().toISO()?.slice(0, 10)).toBe('2023-04-14');
+          expect(result.value.end?.toUTC().toISO()?.slice(0, 10)).toBe('2023-05-14');
+        }
+      }
+    });
+
+    test('starting from with month', () => {
+      const input = 'starting on the 8th of jan';
+      const pattern = findPatternForInput(input);
+      const matches = pattern?.regex.exec(input);
+      
+      if (matches && pattern) {
+        const result = pattern.parse(matches, { referenceDate });
+        expect(result?.type).toBe('range');
+        if (result?.type === 'range' && result.value && typeof result.value === 'object' && 'start' in result.value) {
+          expect(result.value.start.toUTC().toISO()?.slice(0, 10)).toBe('2024-01-08');
+          expect(result.value.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-02-08');
+        }
+      }
+    });
+  });
+});
+
 function getOrdinalSuffix(n: number): string {
   if (n > 3 && n < 21) return 'th';
   switch (n % 10) {
