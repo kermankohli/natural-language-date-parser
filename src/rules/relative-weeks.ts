@@ -1,107 +1,145 @@
 import { RuleModule, IntermediateParse, ParseResult, DateParsePreferences, Pattern } from '../types/types';
 import { DateTime } from 'luxon';
+import { ParseComponent } from '../resolver/resolution-engine';
+
+function createWeekComponent(
+  start: DateTime,
+  end: DateTime,
+  span: { start: number; end: number },
+  originalText: string,
+  preferences: DateParsePreferences,
+  isRelative: boolean = true
+): ParseComponent {
+  // If timezone is specified, convert to that timezone
+  // If no timezone is specified, use UTC
+  const targetZone = preferences.timeZone || 'UTC';
+  
+  // Convert to target timezone preserving the absolute time
+  let startResult = start.setZone(targetZone);
+  let endResult = end.setZone(targetZone);
+  
+  return {
+    type: 'date',
+    span,
+    value: {
+      start: startResult,
+      end: endResult
+    },
+    confidence: 1,
+    metadata: {
+      isRelative,
+      originalText
+    }
+  };
+}
 
 function getWeekRange(date: DateTime, weekStartsOn: number = 0): { start: DateTime; end: DateTime } {
-  // Luxon uses 1-7 (Monday=1, Sunday=7)
-  // Calculate days to subtract to get to the start of the week
-  const daysToSubtract = ((date.weekday - weekStartsOn + 7) % 7);
+  // First, convert to UTC to ensure consistent calculations
+  const utcDate = date.toUTC();
+  const zone = date.zoneName || 'UTC';
   
-  // Get start and end of week
-  const start = date.minus({ days: daysToSubtract }).startOf('day');
+  // Convert weekStartsOn from 0-6 (Sunday=0) to 1-7 (Monday=1) for Luxon
+  const luxonWeekStart = weekStartsOn === 0 ? 7 : weekStartsOn;
+  const currentWeekday = utcDate.weekday;
+
+  // Calculate days to subtract to get to the start of the week
+  // For weekStartsOn = 1 (Monday):
+  // - If current day is Sunday (7), we need to subtract 6 days
+  // - If current day is Monday (1), we need to subtract 0 days
+  // - If current day is Tuesday (2), we need to subtract 1 day, etc.
+  const daysToSubtract = currentWeekday >= luxonWeekStart
+    ? currentWeekday - luxonWeekStart
+    : currentWeekday + (7 - luxonWeekStart);
+
+  // Get the start of the week by subtracting the calculated days
+  const start = utcDate.minus({ days: daysToSubtract }).startOf('day');
   const end = start.plus({ days: 6 }).endOf('day');
 
-  return { start, end };
+  // Convert back to original timezone
+  const startInZone = start.setZone(zone);
+  const endInZone = end.setZone(zone);
+
+  return { start: startInZone, end: endInZone };
+}
+
+function getNextWeekRange(date: DateTime, weekStartsOn: number = 0): { start: DateTime; end: DateTime } {
+  const currentWeek = getWeekRange(date, weekStartsOn);
+  // Next week starts 7 days after current week start
+  const nextWeekStart = currentWeek.start.plus({ days: 7 });
+  return getWeekRange(nextWeekStart, weekStartsOn);
+}
+
+function getLastWeekRange(date: DateTime, weekStartsOn: number = 0): { start: DateTime; end: DateTime } {
+  const currentWeek = getWeekRange(date, weekStartsOn);
+  // Last week starts 7 days before current week start
+  const lastWeekStart = currentWeek.start.minus({ days: 7 });
+  return getWeekRange(lastWeekStart, weekStartsOn);
 }
 
 const patterns: Pattern[] = [
   {
     regex: /^(this|next|last)\s+week$/i,
-    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
-      const [_, modifier] = matches;
+    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
+      const [fullMatch, modifier] = matches;
       const referenceDate = preferences.referenceDate || DateTime.now();
-      const weekStartsOn = preferences.weekStartsOn;
+      const weekStartsOn = preferences.weekStartsOn || 0;
 
-      let targetDate = referenceDate;
+      let range;
       switch (modifier.toLowerCase()) {
         case 'next':
-          targetDate = referenceDate.plus({ weeks: 1 });
+          range = getNextWeekRange(referenceDate, weekStartsOn);
           break;
         case 'last':
-          targetDate = referenceDate.minus({ weeks: 1 });
+          range = getLastWeekRange(referenceDate, weekStartsOn);
           break;
+        default:
+          range = getWeekRange(referenceDate, weekStartsOn);
       }
 
-      const { start, end } = getWeekRange(targetDate, weekStartsOn);
-
-      return {
-        type: 'range',
-        start,
-        end,
-        confidence: 1,
-        text: matches[0]
-      };
+      return createWeekComponent(range.start, range.end, { start: 0, end: fullMatch.length }, fullMatch, preferences);
     }
   },
   {
     regex: /^(the\s+)?week\s+after\s+next$/i,
-    parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
+      const [fullMatch] = matches;
       const referenceDate = preferences.referenceDate || DateTime.now();
       const weekStartsOn = preferences.weekStartsOn || 0;
 
-      const targetDate = referenceDate.plus({ weeks: 2 });
-      const { start, end } = getWeekRange(targetDate, weekStartsOn);
+      const nextWeek = getNextWeekRange(referenceDate, weekStartsOn);
+      const weekAfterNext = getNextWeekRange(nextWeek.start, weekStartsOn);
 
-      return {
-        type: 'range',
-        start,
-        end,
-        confidence: 1,
-        text: 'week after next'
-      };
+      return createWeekComponent(weekAfterNext.start, weekAfterNext.end, { start: 0, end: fullMatch.length }, fullMatch, preferences);
     }
   },
   {
     regex: /^(\d+)\s+weeks?\s+(from\s+now|ago)$/i,
-    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
-      const [_, count, direction] = matches;
+    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
+      const [fullMatch, count, direction] = matches;
       const weeks = parseInt(count);
       if (isNaN(weeks)) return null;
 
       const referenceDate = preferences.referenceDate || DateTime.now();
       const weekStartsOn = preferences.weekStartsOn || 0;
 
+      const currentWeek = getWeekRange(referenceDate, weekStartsOn);
       const targetDate = direction.includes('ago')
-        ? referenceDate.minus({ weeks })
-        : referenceDate.plus({ weeks });
+        ? currentWeek.start.minus({ days: weeks * 7 })
+        : currentWeek.start.plus({ days: weeks * 7 });
 
-      const { start, end } = getWeekRange(targetDate, weekStartsOn);
-      return {
-        type: 'range',
-        start,
-        end,
-        confidence: 1,
-        text: matches[0]
-      };
+      const range = getWeekRange(targetDate, weekStartsOn);
+      return createWeekComponent(range.start, range.end, { start: 0, end: fullMatch.length }, fullMatch, preferences);
     }
   },
   {
     regex: /^upcoming\s+week$/i,
-    parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
+      const [fullMatch] = matches;
       const referenceDate = preferences.referenceDate || DateTime.now();
       const weekStartsOn = preferences.weekStartsOn || 0;
 
-      // "Upcoming week" always means next week, just like "upcoming Wednesday" means next Wednesday
-      const targetDate = referenceDate.plus({ weeks: 1 });
-      
-      const { start, end } = getWeekRange(targetDate, weekStartsOn);
-
-      return {
-        type: 'range',
-        start,
-        end,
-        confidence: 1,
-        text: 'upcoming week'
-      };
+      const range = getNextWeekRange(referenceDate, weekStartsOn);
+      return createWeekComponent(range.start, range.end, { start: 0, end: fullMatch.length }, fullMatch, preferences);
     }
   }
 ];

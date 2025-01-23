@@ -2,6 +2,33 @@ import { RuleModule, IntermediateParse, ParseResult, DateParsePreferences, Patte
 import { parseTimeString, timeComponentsToString } from '../utils/time-parser';
 import { Logger } from '../utils/Logger';
 import { DateTime } from 'luxon';
+import { ParseComponent } from '../resolver/resolution-engine';
+
+function createDateComponent(
+  date: DateTime,
+  span: { start: number; end: number },
+  originalText: string,
+  preferences: DateParsePreferences,
+  isAbsolute: boolean = true
+): ParseComponent {
+  // If timezone is specified, convert to that timezone
+  // If no timezone is specified, use UTC
+  const targetZone = preferences.timeZone || 'UTC';
+  
+  // Convert to target timezone preserving the absolute time
+  let result = date.setZone(targetZone);
+  
+  return {
+    type: 'date',
+    span,
+    value: result,
+    confidence: 1,
+    metadata: {
+      isAbsolute,
+      originalText
+    }
+  };
+}
 
 const MONTHS = {
   'january': 1, 'jan': 1,
@@ -105,8 +132,8 @@ function createMonthNameParser(format: 'MonthFirst' | 'DayFirst') {
 const patterns: Pattern[] = [
   {
     regex: /^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{1,2}):(\d{2}))?(?:\s*([+-]\d{4})?)?$/,
-    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
-      const [_, year, month, day, hours, minutes, timezone] = matches;
+    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
+      const [fullMatch, year, month, day, hours, minutes, timezone] = matches;
       
       // Create base date in UTC
       let date = DateTime.utc(
@@ -140,18 +167,13 @@ const patterns: Pattern[] = [
         return null;
       }
 
-      return {
-        type: 'single',
-        start: utcDate,
-        confidence: 1,
-        text: matches[0]
-      };
+      return createDateComponent(utcDate, { start: 0, end: fullMatch.length }, fullMatch, preferences);
     }
   },
   {
     regex: /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s+(\d{1,2}):(\d{2}))?(?:\s*([+-]\d{4})?)?$/,
-    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
-      const [_, month, day, year, hours, minutes, timezone] = matches;
+    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
+      const [fullMatch, month, day, year, hours, minutes, timezone] = matches;
       let parsedYear = parseInt(year);
       
       // Handle 2-digit years
@@ -191,18 +213,13 @@ const patterns: Pattern[] = [
         return null;
       }
 
-      return {
-        type: 'single',
-        start: utcDate,
-        confidence: 1,
-        text: matches[0]
-      };
+      return createDateComponent(utcDate, { start: 0, end: fullMatch.length }, fullMatch, preferences);
     }
   },
   {
     regex: /^(\d{4})-(\d{2})-(\d{2})(?:\s+at\s+(\d{1,2}):(\d{2})(?:\s*(AM|PM))?)?$/i,
-    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
-      const [_, year, month, day, hours, minutes, meridiem] = matches;
+    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
+      const [fullMatch, year, month, day, hours, minutes, meridiem] = matches;
       
       // Parse the time components
       let hour = hours ? parseInt(hours) : 0;
@@ -235,12 +252,7 @@ const patterns: Pattern[] = [
         return null;
       }
 
-      return {
-        type: 'single',
-        start: utcDate,
-        confidence: 1,
-        text: matches[0]
-      };
+      return createDateComponent(utcDate, { start: 0, end: fullMatch.length }, fullMatch, preferences);
     }
   }
 ];

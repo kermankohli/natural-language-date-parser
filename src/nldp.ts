@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import { DateParsePreferences, ParseResult, RuleModule } from './types/types';
 import { parse, createParserState, registerRule, ParserState } from './parser/parser-engine';
 import { absoluteDatesRule } from './rules/absolute-dates';
@@ -11,6 +12,7 @@ import { relativeWeeksRule } from './rules/relative-weeks';
 import { fuzzyRangesRule } from './rules/fuzzy-ranges';
 import { timeRangesRule } from './rules/time-ranges';
 import { timeOfDayRule } from './rules/time-of-day';
+import { ParseComponent } from './resolver/resolution-engine';
 
 const defaultRules = [
   absoluteDatesRule,  // ISO dates, YYYY-MM-DD etc
@@ -26,6 +28,35 @@ const defaultRules = [
   fuzzyRangesRule     // beginning of year, etc
 ];
 
+function componentToResult(component: ParseComponent | null): ParseResult | null {
+  if (!component) return null;
+
+  // Map component type to ParseResult type
+  const resultType = component.type === 'range' ? 'range' : 'single';
+
+  if (component.type === 'range') {
+    const range = component.value as { start: DateTime; end: DateTime };
+    return {
+      type: resultType,
+      confidence: component.confidence,
+      start: range.start,
+      end: range.end,
+      text: component.metadata?.originalText || '',
+      debugTrace: component.debugTrace
+    };
+  }
+
+  const date = component.value as DateTime;
+  return {
+    type: resultType,
+    confidence: component.confidence,
+    start: date,
+    end: date,
+    text: component.metadata?.originalText || '',
+    debugTrace: component.debugTrace
+  };
+}
+
 export const createNLDP = (preferences: DateParsePreferences = {}): NLDP => {
   let state = createParserState(preferences);
   
@@ -36,7 +67,7 @@ export const createNLDP = (preferences: DateParsePreferences = {}): NLDP => {
 
   return {
     parse: (input: string, parsePreferences: DateParsePreferences = {}) => 
-      parse(state, input, parsePreferences),
+      componentToResult(parse(state, input, parsePreferences)),
     
     registerRule: (rule: RuleModule) => {
       state = registerRule(state, rule);

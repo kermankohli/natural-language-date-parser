@@ -1,47 +1,90 @@
 import { DateTime } from 'luxon';
 import { createParserState, registerRule } from '../../src/parser/parser-engine';
 import { ordinalDaysRule } from '../../src/rules/ordinal-days';
+import { Pattern } from '../../src/types/types';
+
+// Helper to find pattern by example input
+function findPatternForInput(input: string): Pattern | undefined {
+  return ordinalDaysRule.patterns.find(pattern => pattern.regex.test(input));
+}
 
 describe('Ordinal Days Rule', () => {
   const referenceDate = DateTime.fromISO('2023-03-14T12:00:00Z');
 
   test('ordinal days of month', () => {
-    let state = createParserState({ referenceDate });
-    state = registerRule(state, ordinalDaysRule);
+    const firstInput = '1st of March';
+    const pattern = findPatternForInput(firstInput);
+    expect(pattern).toBeDefined();
 
-    const pattern = state.rules[0].patterns.find(p => p.regex.test('1st of March'));
-    const firstOfMarch = pattern?.parse(pattern.regex.exec('1st of March')!, { referenceDate });
-    expect(firstOfMarch?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2023-03-01');
+    const matches = pattern?.regex.exec(firstInput);
+    expect(matches).not.toBeNull();
 
-    const fifteenthPattern = state.rules[0].patterns.find(p => p.regex.test('15th of March'));
-    const fifteenthOfMarch = fifteenthPattern?.parse(fifteenthPattern.regex.exec('15th of March')!, { referenceDate });
-    expect(fifteenthOfMarch?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2023-03-15');
+    if (matches && pattern) {
+      const result = pattern.parse(matches, { referenceDate });
+      expect(result).not.toBeNull();
+      expect(result?.type).toBe('date');
+      expect(result?.span).toEqual({ start: 0, end: firstInput.length });
+      expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe('2023-03-01');
+      expect(result?.metadata?.isOrdinal).toBe(true);
+      expect(result?.metadata?.originalText).toBe(firstInput);
+    }
 
-    const twentyThirdPattern = state.rules[0].patterns.find(p => p.regex.test('23rd of March'));
-    const twentyThirdOfMarch = twentyThirdPattern?.parse(twentyThirdPattern.regex.exec('23rd of March')!, { referenceDate });
-    expect(twentyThirdOfMarch?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2023-03-23');
+    const fifteenthInput = '15th of March';
+    const fifteenthPattern = findPatternForInput(fifteenthInput);
+    const fifteenthMatches = fifteenthPattern?.regex.exec(fifteenthInput);
+    if (fifteenthMatches && fifteenthPattern) {
+      const result = fifteenthPattern.parse(fifteenthMatches, { referenceDate });
+      expect(result?.type).toBe('date');
+      expect(result?.span).toEqual({ start: 0, end: fifteenthInput.length });
+      expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe('2023-03-15');
+      expect(result?.metadata?.isOrdinal).toBe(true);
+      expect(result?.metadata?.originalText).toBe(fifteenthInput);
+    }
 
-    const thirtyFirstPattern = state.rules[0].patterns.find(p => p.regex.test('31st of March'));
-    const thirtyFirstOfMarch = thirtyFirstPattern?.parse(thirtyFirstPattern.regex.exec('31st of March')!, { referenceDate });
-    expect(thirtyFirstOfMarch?.start?.toUTC().toISO()?.slice(0, 10)).toBe('2023-03-31');
+    const twentyThirdInput = '23rd of March';
+    const twentyThirdPattern = findPatternForInput(twentyThirdInput);
+    const twentyThirdMatches = twentyThirdPattern?.regex.exec(twentyThirdInput);
+    if (twentyThirdMatches && twentyThirdPattern) {
+      const result = twentyThirdPattern.parse(twentyThirdMatches, { referenceDate });
+      expect(result?.type).toBe('date');
+      expect(result?.span).toEqual({ start: 0, end: twentyThirdInput.length });
+      expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe('2023-03-23');
+      expect(result?.metadata?.isOrdinal).toBe(true);
+      expect(result?.metadata?.originalText).toBe(twentyThirdInput);
+    }
+
+    const thirtyFirstInput = '31st of March';
+    const thirtyFirstPattern = findPatternForInput(thirtyFirstInput);
+    const thirtyFirstMatches = thirtyFirstPattern?.regex.exec(thirtyFirstInput);
+    if (thirtyFirstMatches && thirtyFirstPattern) {
+      const result = thirtyFirstPattern.parse(thirtyFirstMatches, { referenceDate });
+      expect(result?.type).toBe('date');
+      expect(result?.span).toEqual({ start: 0, end: thirtyFirstInput.length });
+      expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe('2023-03-31');
+      expect(result?.metadata?.isOrdinal).toBe(true);
+      expect(result?.metadata?.originalText).toBe(thirtyFirstInput);
+    }
   });
 
   test('timezone handling', () => {
-    let state = createParserState({
-      referenceDate,
-      timeZone: 'America/New_York'
-    });
-    state = registerRule(state, ordinalDaysRule);
+    const input = '15th of March';
+    const pattern = findPatternForInput(input);
+    expect(pattern).toBeDefined();
 
-    const pattern = state.rules[0].patterns.find(p => p.regex.test('15th of March'));
-    const result = pattern?.parse(pattern.regex.exec('15th of March')!, { referenceDate, timeZone: 'America/New_York' });
-    expect(result?.start?.toUTC().toISO()).toBe('2023-03-15T04:00:00.000Z');
+    const matches = pattern?.regex.exec(input);
+    expect(matches).not.toBeNull();
+
+    if (matches && pattern) {
+      const result = pattern.parse(matches, { referenceDate, timeZone: 'America/New_York' });
+      expect(result?.type).toBe('date');
+      expect(result?.span).toEqual({ start: 0, end: input.length });
+      expect((result?.value as DateTime).toUTC().toISO()).toBe('2023-03-15T04:00:00.000Z');
+      expect(result?.metadata?.isOrdinal).toBe(true);
+      expect(result?.metadata?.originalText).toBe(input);
+    }
   });
 
   test('ordinal variations', () => {
-    let state = createParserState({ referenceDate });
-    state = registerRule(state, ordinalDaysRule);
-
     const variations = [
       { input: 'first of March', expected: '2023-03-01' },
       { input: '1st of March', expected: '2023-03-01' },
@@ -54,21 +97,40 @@ describe('Ordinal Days Rule', () => {
     ];
 
     for (const { input, expected } of variations) {
-      const pattern = state.rules[0].patterns.find(p => p.regex.test(input));
-      const result = pattern?.parse(pattern.regex.exec(input)!, { referenceDate });
-      expect(result?.start?.toUTC().toISO()?.slice(0, 10)).toBe(expected);
+      const pattern = findPatternForInput(input);
+      expect(pattern).toBeDefined();
+
+      const matches = pattern?.regex.exec(input);
+      expect(matches).not.toBeNull();
+
+      if (matches && pattern) {
+        const result = pattern.parse(matches, { referenceDate });
+        expect(result?.type).toBe('date');
+        expect(result?.span).toEqual({ start: 0, end: input.length });
+        expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe(expected);
+        expect(result?.metadata?.isOrdinal).toBe(true);
+        expect(result?.metadata?.originalText).toBe(input);
+      }
     }
   });
 
   test('numeric ordinals', () => {
-    let state = createParserState({ referenceDate });
-    state = registerRule(state, ordinalDaysRule);
-
     for (let day = 1; day <= 31; day++) {
       const input = `${day}${getOrdinalSuffix(day)} of March`;
-      const pattern = state.rules[0].patterns.find(p => p.regex.test(input));
-      const result = pattern?.parse(pattern.regex.exec(input)!, { referenceDate });
-      expect(result?.start?.toUTC().toISO()?.slice(0, 10)).toBe(`2023-03-${day.toString().padStart(2, '0')}`);
+      const pattern = findPatternForInput(input);
+      expect(pattern).toBeDefined();
+
+      const matches = pattern?.regex.exec(input);
+      expect(matches).not.toBeNull();
+
+      if (matches && pattern) {
+        const result = pattern.parse(matches, { referenceDate });
+        expect(result?.type).toBe('date');
+        expect(result?.span).toEqual({ start: 0, end: input.length });
+        expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe(`2023-03-${day.toString().padStart(2, '0')}`);
+        expect(result?.metadata?.isOrdinal).toBe(true);
+        expect(result?.metadata?.originalText).toBe(input);
+      }
     }
   });
 });

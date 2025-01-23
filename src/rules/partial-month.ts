@@ -1,6 +1,7 @@
-import { RuleModule, ParseResult, DateParsePreferences, Pattern } from '../types/types';
+import { RuleModule, DateParsePreferences } from '../types/types';
 import { Logger } from '../utils/Logger';
 import { DateTime } from 'luxon';
+import { ParseComponent } from '../resolver/resolution-engine';
 
 const MONTHS = {
   january: 1, jan: 1,
@@ -26,15 +27,83 @@ const PART_RANGES = {
   end: { start: 21, end: 31 }
 };
 
+function createPartialMonthComponent(
+  monthNum: number,
+  range: { start: number; end: number },
+  span: { start: number; end: number },
+  originalText: string,
+  preferences: DateParsePreferences
+): ParseComponent {
+  const referenceYear = preferences.referenceDate?.year || DateTime.now().year;
+  const targetZone = preferences.timeZone || 'UTC';
+  Logger.debug('Using timezone', { targetZone });
+
+  if (preferences.timeZone) {
+    // If timezone specified, create dates directly in target timezone
+    const start = DateTime.fromObject(
+      { year: referenceYear, month: monthNum, day: range.start },
+      { zone: targetZone }
+    ).startOf('day');
+    
+    const end = DateTime.fromObject(
+      { year: referenceYear, month: monthNum, day: range.end },
+      { zone: targetZone }
+    ).endOf('day');
+
+    Logger.debug('Created dates', { 
+      start: start.toISO(),
+      end: end.toISO()
+    });
+
+    return {
+      type: 'range',
+      span,
+      value: { start, end },
+      confidence: 1.0,
+      metadata: {
+        isPartialMonth: true,
+        originalText
+      }
+    };
+  } else {
+    // Otherwise use UTC
+    const start = DateTime.fromObject(
+      { year: referenceYear, month: monthNum, day: range.start },
+      { zone: 'UTC' }
+    ).startOf('day');
+    
+    const end = DateTime.fromObject(
+      { year: referenceYear, month: monthNum, day: range.end },
+      { zone: 'UTC' }
+    ).endOf('day');
+
+    Logger.debug('Created dates', { 
+      start: start.toISO(),
+      end: end.toISO()
+    });
+
+    return {
+      type: 'range',
+      span,
+      value: { start, end },
+      confidence: 1.0,
+      metadata: {
+        isPartialMonth: true,
+        originalText
+      }
+    };
+  }
+}
+
 export const partialMonthRule: RuleModule = {
   name: 'partial-month',
   patterns: [
     {
       regex: /^(early|beginning|mid|middle|late|end)\s+(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)$/i,
-      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
         Logger.debug('Parsing partial month', { matches, preferences });
 
-        const [, part, month] = matches;
+        const [fullMatch, part, month] = matches;
         if (!part || !month) {
           Logger.debug('Missing part or month', { part, month });
           return null;
@@ -46,39 +115,22 @@ export const partialMonthRule: RuleModule = {
           return null;
         }
 
-        const referenceYear = preferences.referenceDate?.year || DateTime.now().year;
         const range = PART_RANGES[part.toLowerCase() as keyof typeof PART_RANGES];
         if (!range) {
           Logger.debug('Invalid part', { part });
           return null;
         }
 
-        // Create dates in the target timezone if specified
-        const targetZone = preferences.timeZone || 'UTC';
-        Logger.debug('Using timezone', { targetZone });
+        const matchStart = matches.index + (fullMatch.startsWith(' ') ? 1 : 0);
+        const matchEnd = matchStart + fullMatch.trim().length;
 
-        const start = DateTime.fromObject(
-          { year: referenceYear, month: monthNum, day: range.start },
-          { zone: targetZone }
-        ).startOf('day');
-        
-        const end = DateTime.fromObject(
-          { year: referenceYear, month: monthNum, day: range.end },
-          { zone: targetZone }
-        ).endOf('day');
-
-        Logger.debug('Created dates', { 
-          start: start.toISO(),
-          end: end.toISO()
-        });
-
-        return {
-          type: 'range',
-          start: start.toUTC(),
-          end: end.toUTC(),
-          confidence: 1.0,
-          text: matches[0]
-        };
+        return createPartialMonthComponent(
+          monthNum,
+          range,
+          { start: matchStart, end: matchEnd },
+          fullMatch.trim(),
+          preferences
+        );
       }
     }
   ]

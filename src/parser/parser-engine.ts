@@ -1,8 +1,10 @@
-import { DateParsePreferences, ParseResult, RuleModule, IntermediateParse } from '../types/types';
-import { tokenize, TokenizerOptions } from '../tokenizer/tokenizer';
-import { debugTrace } from '../utils/debug-trace';
+import { DateParsePreferences, ParseResult, RuleModule } from '../types/types';
+import { TokenizerOptions } from '../tokenizer/tokenizer';
+import { debugTrace, ParseTrace } from '../utils/debug-trace';
 import { Logger } from '../utils/Logger';
+import { ParseComponent, resolveComponents } from '../resolver/resolution-engine';
 import { resolvePreferences } from '../resolver/preference-resolver';
+import { DateTime } from 'luxon';
 
 export interface ParserState {
   rules: RuleModule[];
@@ -25,7 +27,7 @@ export function registerRule(state: ParserState, rule: RuleModule): ParserState 
   };
 }
 
-export function parse(state: ParserState, input: string, preferences?: DateParsePreferences): ParseResult | null {
+export function parse(state: ParserState, input: string, preferences?: DateParsePreferences): ParseComponent | null {
   const mergedPrefs = {
     ...state.defaultPreferences,
     ...preferences
@@ -33,18 +35,10 @@ export function parse(state: ParserState, input: string, preferences?: DateParse
 
   if (mergedPrefs.debug) {
     debugTrace.startTrace(input);
-    debugTrace.addRuleMatch({
-      ruleName: 'tokenizer',
-      input,
-      matched: true
-    });
   }
 
-  // Try each rule module
-  let dateResult: ParseResult | null = null;
-  let timeResult: ParseResult | null = null;
-  let timeRangeResult: ParseResult | null = null;
-  let timeOfDayResult: ParseResult | null = null;
+  // Collect all components from all rules
+  const components: ParseComponent[] = [];
 
   for (const rule of state.rules) {
     // Try each pattern in the rule
@@ -62,30 +56,21 @@ export function parse(state: ParserState, input: string, preferences?: DateParse
 
         try {
           const result = pattern.parse(matches, mergedPrefs);
-          if (result) {
-            Logger.debug('Rule match result:', {
+          if (isParseComponent(result)) {
+            Logger.debug('Rule match component:', {
               ruleName: rule.name,
-              resultType: result.type,
-              text: result.text,
-              start: result.start?.toISO(),
-              end: result.end?.toISO(),
-              confidence: result.confidence
+              componentType: result.type,
+              span: result.span,
+              confidence: result.confidence,
+              value: isDateTimeRange(result.value)
+                ? {
+                    start: result.value.start.toISO(),
+                    end: result.value.end.toISO()
+                  }
+                : result.value.toISO()
             });
-
-            if (rule.name === 'time-ranges') {
-              timeRangeResult = result;
-            } else if (rule.name === 'time-only') {
-              timeResult = result;
-            } else if (rule.name === 'time-of-day') {
-              timeOfDayResult = result;
-              Logger.debug('Time of day result:', {
-                type: result.type,
-                start: result.start?.toISO(),
-                end: result.end?.toISO()
-              });
-            } else {
-              dateResult = result;
-            }
+            
+            components.push(result);
           }
         } catch (err) {
           Logger.error(`Error in rule ${rule.name}:`, { error: err });
@@ -101,60 +86,51 @@ export function parse(state: ParserState, input: string, preferences?: DateParse
     }
   }
 
+  // No components found
+  if (components.length === 0) {
+    if (mergedPrefs.debug) {
+      debugTrace.endTrace();
+    }
+    return null;
+  }
+
+  // Resolve components into a result
+  const result = resolveComponents(components, input);
+  
+  if (!result) {
+    if (mergedPrefs.debug) {
+      debugTrace.endTrace();
+    }
+    return null;
+  }
+
+  // Apply preferences to the result
+  const finalResult = resolvePreferences(result, mergedPrefs);
+
+  // Add debug trace if in debug mode
   if (mergedPrefs.debug) {
+    const trace = debugTrace.getTrace();
+    if (trace) {
+      finalResult.debugTrace = trace;
+    }
     debugTrace.endTrace();
   }
 
-  let result: ParseResult | null = null;
+  return finalResult;
+}
 
-  // Return time range result directly if no date result
-  if (timeRangeResult && !dateResult) {
-    Logger.debug('Using time range result directly');
-    result = resolvePreferences(timeRangeResult, mergedPrefs);
-  }
-  // Combine date and time results if both exist
-  else if (dateResult) {
-    if (timeOfDayResult) {
-      Logger.debug('Combining date result with time of day:', {
-        dateType: dateResult.type,
-        timeOfDayType: timeOfDayResult.type
-      });
-      result = resolvePreferences(dateResult, mergedPrefs, timeOfDayResult);
-    } else if (timeRangeResult) {
-      Logger.debug('Combining date result with time range');
-      result = resolvePreferences(dateResult, mergedPrefs, timeRangeResult);
-    } else if (timeResult) {
-      Logger.debug('Combining date result with time');
-      result = resolvePreferences(dateResult, mergedPrefs, timeResult);
-    } else {
-      Logger.debug('Using date result only');
-      result = resolvePreferences(dateResult, mergedPrefs);
-    }
-  }
-  // Return time result if no date result
-  else if (timeOfDayResult) {
-    Logger.debug('Using time of day result directly');
-    result = resolvePreferences(timeOfDayResult, mergedPrefs);
-  } else if (timeResult) {
-    Logger.debug('Using time result directly');
-    result = resolvePreferences(timeResult, mergedPrefs);
-  }
+// Type guards
+function isParseComponent(value: any): value is ParseComponent {
+  return (
+    value &&
+    typeof value === 'object' &&
+    'type' in value &&
+    'span' in value &&
+    'value' in value &&
+    'confidence' in value
+  );
+}
 
-  // Log final result
-  if (result) {
-    Logger.debug('Final parse result:', {
-      type: result.type,
-      text: result.text,
-      start: result.start?.toISO(),
-      end: result.end?.toISO(),
-      confidence: result.confidence
-    });
-  }
-
-  // Attach debug trace if in debug mode
-  if (result && mergedPrefs.debug) {
-    result.debugTrace = debugTrace.getTrace() || undefined;
-  }
-
-  return result;
+function isDateTimeRange(value: DateTime | { start: DateTime; end: DateTime }): value is { start: DateTime; end: DateTime } {
+  return typeof value === 'object' && 'start' in value && 'end' in value;
 } 

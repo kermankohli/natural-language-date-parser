@@ -1,6 +1,7 @@
-import { RuleModule, ParseResult, DateParsePreferences, TimeOfDayPreferences } from '../types/types';
+import { RuleModule, DateParsePreferences, TimeOfDayPreferences } from '../types/types';
 import { DateTime } from 'luxon';
 import { Logger } from '../utils/Logger';
+import { ParseComponent } from '../resolver/resolution-engine';
 
 export const DEFAULT_TIME_OF_DAY_PREFERENCES: TimeOfDayPreferences = {
   morning: {
@@ -33,12 +34,13 @@ export const DEFAULT_TIME_OF_DAY_PREFERENCES: TimeOfDayPreferences = {
   }
 };
 
-function createTimeResult(
+function createTimeOfDayComponent(
   startHour: number,
   endHour: number,
-  preferences: DateParsePreferences,
-  text: string
-): ParseResult {
+  span: { start: number; end: number },
+  originalText: string,
+  preferences: DateParsePreferences
+): ParseComponent {
   const referenceDate = preferences.referenceDate || DateTime.now();
   const zone = preferences.timeZone || 'UTC';
 
@@ -63,10 +65,13 @@ function createTimeResult(
 
   return {
     type: 'range',
-    start,
-    end,
+    span,
+    value: { start, end },
     confidence: 1,
-    text
+    metadata: {
+      originalText,
+      isTimeOfDay: true
+    }
   };
 }
 
@@ -94,8 +99,8 @@ export const timeOfDayRule: RuleModule = {
     {
       // Matches "morning", "early morning", "late afternoon", etc.
       regex: /^(?:(early|mid|late)\s+)?(morning|afternoon|evening|night)$/i,
-      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
-        const [_, modifier, timeOfDay] = matches;
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
+        const [fullMatch, modifier, timeOfDay] = matches;
         
         const range = getTimeOfDayRange(
           timeOfDay.toLowerCase() as keyof TimeOfDayPreferences,
@@ -103,7 +108,16 @@ export const timeOfDayRule: RuleModule = {
           preferences
         );
 
-        return createTimeResult(range.start, range.end, preferences, matches[0]);
+        const matchStart = matches.index + (fullMatch.startsWith(' ') ? 1 : 0);
+        const matchEnd = matchStart + fullMatch.trim().length;
+
+        return createTimeOfDayComponent(
+          range.start,
+          range.end,
+          { start: matchStart, end: matchEnd },
+          fullMatch.trim(),
+          preferences
+        );
       }
     }
   ]

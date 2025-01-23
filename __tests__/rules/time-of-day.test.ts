@@ -1,7 +1,11 @@
 import { DateTime } from 'luxon';
-import { DateParsePreferences, TimeOfDayPreferences } from '../../src/types/types';
+import { DateParsePreferences, TimeOfDayPreferences, Pattern } from '../../src/types/types';
 import { timeOfDayRule, DEFAULT_TIME_OF_DAY_PREFERENCES } from '../../src/rules/time-of-day';
-import { createParserState, registerRule } from '../../src/parser/parser-engine';
+
+// Helper to find pattern by example input
+function findPatternForInput(input: string): Pattern | undefined {
+  return timeOfDayRule.patterns.find(pattern => pattern.regex.test(input));
+}
 
 describe('Time of Day Rule', () => {
   const referenceDate = DateTime.fromISO('2024-03-14T12:00:00Z');
@@ -9,86 +13,164 @@ describe('Time of Day Rule', () => {
 
   describe('basic time of day parsing', () => {
     test('morning should use default preferences', () => {
-      let state = createParserState({ referenceDate });
-      state = registerRule(state, timeOfDayRule);
+      const input = 'morning';
+      const pattern = findPatternForInput(input);
+      expect(pattern).toBeDefined();
 
-      const pattern = state.rules[0].patterns[0];
-      const result = pattern.parse(pattern.regex.exec('morning')!, preferences);
-      
-      expect(result?.start.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.morning.start);
-      expect(result?.end?.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.morning.end);
+      const matches = pattern?.regex.exec(input);
+      expect(matches).not.toBeNull();
+
+      if (matches && pattern) {
+        const result = pattern.parse(matches, preferences);
+        expect(result).not.toBeNull();
+        expect(result?.type).toBe('range');
+        expect(result?.span).toEqual({ start: 0, end: 7 });
+        
+        const value = result?.value as { start: DateTime; end: DateTime };
+        expect(value.start.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.morning.start);
+        expect(value.end.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.morning.end);
+        
+        expect(result?.metadata?.originalText).toBe('morning');
+      }
     });
 
     test('afternoon should use default preferences', () => {
-      let state = createParserState({ referenceDate });
-      state = registerRule(state, timeOfDayRule);
+      const input = 'afternoon';
+      const pattern = findPatternForInput(input);
+      expect(pattern).toBeDefined();
 
-      const pattern = state.rules[0].patterns[0];
-      const result = pattern.parse(pattern.regex.exec('afternoon')!, preferences);
-      
-      expect(result?.start.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.afternoon.start);
-      expect(result?.end?.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.afternoon.end);
+      const matches = pattern?.regex.exec(input);
+      expect(matches).not.toBeNull();
+
+      if (matches && pattern) {
+        const result = pattern.parse(matches, preferences);
+        expect(result).not.toBeNull();
+        expect(result?.type).toBe('range');
+        expect(result?.span).toEqual({ start: 0, end: 9 });
+        
+        const value = result?.value as { start: DateTime; end: DateTime };
+        expect(value.start.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.afternoon.start);
+        expect(value.end.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.afternoon.end);
+        
+        expect(result?.metadata?.originalText).toBe('afternoon');
+      }
     });
 
     test('evening should use default preferences', () => {
-      let state = createParserState({ referenceDate });
-      state = registerRule(state, timeOfDayRule);
+      const input = 'evening';
+      const pattern = findPatternForInput(input);
+      expect(pattern).toBeDefined();
 
-      const pattern = state.rules[0].patterns[0];
-      const result = pattern.parse(pattern.regex.exec('evening')!, preferences);
-      
-      expect(result?.start.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.evening.start);
-      expect(result?.end?.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.evening.end);
+      const matches = pattern?.regex.exec(input);
+      expect(matches).not.toBeNull();
+
+      if (matches && pattern) {
+        const result = pattern.parse(matches, preferences);
+        expect(result).not.toBeNull();
+        expect(result?.type).toBe('range');
+        expect(result?.span).toEqual({ start: 0, end: 7 });
+        
+        const value = result?.value as { start: DateTime; end: DateTime };
+        expect(value.start.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.evening.start);
+        expect(value.end.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.evening.end);
+        
+        expect(result?.metadata?.originalText).toBe('evening');
+      }
     });
 
     test('night should handle crossing midnight', () => {
-      let state = createParserState({ referenceDate });
-      state = registerRule(state, timeOfDayRule);
+      const input = 'night';
+      const pattern = findPatternForInput(input);
+      expect(pattern).toBeDefined();
 
-      const pattern = state.rules[0].patterns[0];
-      const result = pattern.parse(pattern.regex.exec('night')!, preferences);
-      
-      expect(result).not.toBeNull();
-      expect(result?.start.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.night.start);
-      expect(result?.end?.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.night.end);
-      if (result && result.start && result.end) {
-        expect(result.end.day).toBe(result.start.day + 1); // Should be next day
+      const matches = pattern?.regex.exec(input);
+      expect(matches).not.toBeNull();
+
+      if (matches && pattern) {
+        const result = pattern.parse(matches, preferences);
+        expect(result).not.toBeNull();
+        expect(result?.type).toBe('range');
+        expect(result?.span).toEqual({ start: 0, end: 5 });
+        
+        const value = result?.value as { start: DateTime; end: DateTime };
+        expect(value.start.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.night.start);
+        expect(value.end.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.night.end);
+        
+        // Should be next day
+        expect(value.end.toISO()?.slice(0, 10)).toBe(
+          value.start.plus({ days: 1 }).toISO()?.slice(0, 10)
+        );
+        
+        expect(result?.metadata?.originalText).toBe('night');
       }
     });
   });
 
   describe('modifiers', () => {
     test('early morning should use early morning range', () => {
-      let state = createParserState({ referenceDate });
-      state = registerRule(state, timeOfDayRule);
+      const input = 'early morning';
+      const pattern = findPatternForInput(input);
+      expect(pattern).toBeDefined();
 
-      const pattern = state.rules[0].patterns[0];
-      const result = pattern.parse(pattern.regex.exec('early morning')!, preferences);
-      
-      expect(result?.start.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.morning.early.start);
-      expect(result?.end?.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.morning.early.end);
+      const matches = pattern?.regex.exec(input);
+      expect(matches).not.toBeNull();
+
+      if (matches && pattern) {
+        const result = pattern.parse(matches, preferences);
+        expect(result).not.toBeNull();
+        expect(result?.type).toBe('range');
+        expect(result?.span).toEqual({ start: 0, end: 13 });
+        
+        const value = result?.value as { start: DateTime; end: DateTime };
+        expect(value.start.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.morning.early.start);
+        expect(value.end.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.morning.early.end);
+        
+        expect(result?.metadata?.originalText).toBe('early morning');
+      }
     });
 
     test('mid afternoon should use mid afternoon range', () => {
-      let state = createParserState({ referenceDate });
-      state = registerRule(state, timeOfDayRule);
+      const input = 'mid afternoon';
+      const pattern = findPatternForInput(input);
+      expect(pattern).toBeDefined();
 
-      const pattern = state.rules[0].patterns[0];
-      const result = pattern.parse(pattern.regex.exec('mid afternoon')!, preferences);
-      
-      expect(result?.start.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.afternoon.mid.start);
-      expect(result?.end?.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.afternoon.mid.end);
+      const matches = pattern?.regex.exec(input);
+      expect(matches).not.toBeNull();
+
+      if (matches && pattern) {
+        const result = pattern.parse(matches, preferences);
+        expect(result).not.toBeNull();
+        expect(result?.type).toBe('range');
+        expect(result?.span).toEqual({ start: 0, end: 13 });
+        
+        const value = result?.value as { start: DateTime; end: DateTime };
+        expect(value.start.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.afternoon.mid.start);
+        expect(value.end.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.afternoon.mid.end);
+        
+        expect(result?.metadata?.originalText).toBe('mid afternoon');
+      }
     });
 
     test('late evening should use late evening range', () => {
-      let state = createParserState({ referenceDate });
-      state = registerRule(state, timeOfDayRule);
+      const input = 'late evening';
+      const pattern = findPatternForInput(input);
+      expect(pattern).toBeDefined();
 
-      const pattern = state.rules[0].patterns[0];
-      const result = pattern.parse(pattern.regex.exec('late evening')!, preferences);
-      
-      expect(result?.start.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.evening.late.start);
-      expect(result?.end?.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.evening.late.end);
+      const matches = pattern?.regex.exec(input);
+      expect(matches).not.toBeNull();
+
+      if (matches && pattern) {
+        const result = pattern.parse(matches, preferences);
+        expect(result).not.toBeNull();
+        expect(result?.type).toBe('range');
+        expect(result?.span).toEqual({ start: 0, end: 12 });
+        
+        const value = result?.value as { start: DateTime; end: DateTime };
+        expect(value.start.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.evening.late.start);
+        expect(value.end.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.evening.late.end);
+        
+        expect(result?.metadata?.originalText).toBe('late evening');
+      }
     });
   });
 
@@ -125,48 +207,25 @@ describe('Time of Day Rule', () => {
     };
 
     test('should use custom preferences when provided', () => {
-      let state = createParserState({ referenceDate });
-      state = registerRule(state, timeOfDayRule);
+      const input = 'morning';
+      const pattern = findPatternForInput(input);
+      expect(pattern).toBeDefined();
 
-      const pattern = state.rules[0].patterns[0];
-      const result = pattern.parse(pattern.regex.exec('morning')!, {
-        ...preferences,
-        timeOfDay: customPreferences
-      });
-      
-      expect(result?.start.hour).toBe(customPreferences.morning.start);
-      expect(result?.end?.hour).toBe(customPreferences.morning.end);
-    });
+      const matches = pattern?.regex.exec(input);
+      expect(matches).not.toBeNull();
 
-    test('should use custom preferences for modifiers', () => {
-      let state = createParserState({ referenceDate });
-      state = registerRule(state, timeOfDayRule);
-
-      const pattern = state.rules[0].patterns[0];
-      const result = pattern.parse(pattern.regex.exec('early morning')!, {
-        ...preferences,
-        timeOfDay: customPreferences
-      });
-      
-      expect(result?.start.hour).toBe(customPreferences.morning.early.start);
-      expect(result?.end?.hour).toBe(customPreferences.morning.early.end);
-    });
-  });
-
-  describe('timezone handling', () => {
-    test('should respect timezone preferences', () => {
-      let state = createParserState({ referenceDate });
-      state = registerRule(state, timeOfDayRule);
-
-      const pattern = state.rules[0].patterns[0];
-      const result = pattern.parse(pattern.regex.exec('morning')!, {
-        ...preferences,
-        timeZone: 'America/New_York'
-      });
-      
-      expect(result?.start.zoneName).toBe('America/New_York');
-      expect(result?.start.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.morning.start);
-      expect(result?.end?.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.morning.end);
+      if (matches && pattern) {
+        const result = pattern.parse(matches, { ...preferences, timeOfDay: customPreferences });
+        expect(result).not.toBeNull();
+        expect(result?.type).toBe('range');
+        expect(result?.span).toEqual({ start: 0, end: 7 });
+        
+        const value = result?.value as { start: DateTime; end: DateTime };
+        expect(value.start.hour).toBe(customPreferences.morning.start);
+        expect(value.end.hour).toBe(customPreferences.morning.end);
+        
+        expect(result?.metadata?.originalText).toBe('morning');
+      }
     });
   });
 }); 

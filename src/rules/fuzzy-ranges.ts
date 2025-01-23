@@ -1,6 +1,7 @@
-import { RuleModule, ParseResult, DateParsePreferences, Pattern } from '../types/types';
+import { RuleModule, DateParsePreferences, Pattern } from '../types/types';
 import { Logger } from '../utils/Logger';
 import { DateTime } from 'luxon';
+import { ParseComponent } from '../resolver/resolution-engine';
 
 const MONTHS = {
   january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
@@ -116,46 +117,73 @@ function getPeriodRange(part: string, period: string, referenceDate: DateTime): 
   }
 }
 
+function createFuzzyRangeComponent(
+  start: DateTime,
+  end: DateTime,
+  span: { start: number; end: number },
+  originalText: string,
+  preferences: DateParsePreferences
+): ParseComponent {
+  return {
+    type: 'range',
+    span,
+    value: { start, end },
+    confidence: 1.0,
+    metadata: {
+      isFuzzyRange: true,
+      originalText
+    }
+  };
+}
+
 export const fuzzyRangesRule: RuleModule = {
   name: 'fuzzy-ranges',
   patterns: [
     {
       regex: /^(this|next|the following)\s+weekend$/i,
-      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
-        const offset = matches[1].toLowerCase() === 'next' || 
-                      matches[1].toLowerCase() === 'the following' ? 1 : 0;
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
+        const [fullMatch, modifier] = matches;
+        const offset = modifier.toLowerCase() === 'next' || 
+                      modifier.toLowerCase() === 'the following' ? 1 : 0;
         const { start, end } = getWeekendRange(preferences.referenceDate || DateTime.now(), offset);
-        return {
-          type: 'range',
+        
+        const matchStart = matches.index + (fullMatch.startsWith(' ') ? 1 : 0);
+        const matchEnd = matchStart + fullMatch.trim().length;
+
+        return createFuzzyRangeComponent(
           start,
           end,
-          confidence: 1.0,
-          text: matches[0]
-        };
+          { start: matchStart, end: matchEnd },
+          fullMatch.trim(),
+          preferences
+        );
       }
     },
     {
       regex: /^(first|second)\s+half\s+(?:of\s+)?(january|february|march|april|may|june|july|august|september|october|november|december)$/i,
-      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
-        const [, half, month] = matches;
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
+        const [fullMatch, half, month] = matches;
         const monthNum = MONTHS[month.toLowerCase() as keyof typeof MONTHS];
         if (!monthNum) return null;
 
         const year = preferences.referenceDate?.year || DateTime.now().year;
         const { start, end } = getHalfMonthRange(year, monthNum, half.toLowerCase() === 'second');
         
-        return {
-          type: 'range',
+        const matchStart = matches.index + (fullMatch.startsWith(' ') ? 1 : 0);
+        const matchEnd = matchStart + fullMatch.trim().length;
+
+        return createFuzzyRangeComponent(
           start,
           end,
-          confidence: 1.0,
-          text: matches[0]
-        };
+          { start: matchStart, end: matchEnd },
+          fullMatch.trim(),
+          preferences
+        );
       }
     },
     {
-        regex: /^(?:the\s+)?(beginning|middle|mid|end|start|early|late)(?:\s+(?:of|in)\s+(?:the\s+)?|\s+|\-)(year|month|week)(?:\s+end)?$|^(year|month|week)[-\s](beginning|middle|mid|end|start|early|late)$/i,
-        parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+      regex: /^(?:the\s+)?(beginning|middle|mid|end|start|early|late)(?:\s+(?:of|in)\s+(?:the\s+)?|\s+|\-)(year|month|week)(?:\s+end)?$|^(year|month|week)[-\s](beginning|middle|mid|end|start|early|late)$/i,
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
         const [fullMatch, part1, period1, period2, part2] = matches;
         let part = part1 || part2;
         let period = period1 || period2;
@@ -169,18 +197,21 @@ export const fuzzyRangesRule: RuleModule = {
 
         const { start, end } = getPeriodRange(normalizedPart, period.toLowerCase(), preferences.referenceDate || DateTime.now());
         
-        return {
-          type: 'range',
+        const matchStart = matches.index + (fullMatch.startsWith(' ') ? 1 : 0);
+        const matchEnd = matchStart + fullMatch.trim().length;
+
+        return createFuzzyRangeComponent(
           start,
           end,
-          confidence: 1.0,
-          text: fullMatch
-        };
+          { start: matchStart, end: matchEnd },
+          fullMatch.trim(),
+          preferences
+        );
       }
     },
     {
       regex: /^(?:the\s+)?(beginning|middle|mid|end|start|early|late)(?:\s+(?:of|in)\s+(?:the\s+)?|\s+|\-)(january|february|march|april|may|june|july|august|september|october|november|december)$/i,
-      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
         const [fullMatch, part, month] = matches;
         if (!part || !month) return null;
 
@@ -207,19 +238,22 @@ export const fuzzyRangesRule: RuleModule = {
           end = monthStart.endOf('month');
         }
         
-        return {
-          type: 'range',
+        const matchStart = matches.index + (fullMatch.startsWith(' ') ? 1 : 0);
+        const matchEnd = matchStart + fullMatch.trim().length;
+
+        return createFuzzyRangeComponent(
           start,
           end,
-          confidence: 1.0,
-          text: fullMatch
-        };
+          { start: matchStart, end: matchEnd },
+          fullMatch.trim(),
+          preferences
+        );
       }
     },
     {
       regex: /^(first|last)\s+(\d+)\s+days\s+(?:of\s+)?(next\s+month|(?:january|february|march|april|may|june|july|august|september|october|november|december))$/i,
-      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
-        const [, position, count, month] = matches;
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
+        const [fullMatch, position, count, month] = matches;
         if (!position || !count || !month) return null;
 
         const numDays = parseInt(count, 10);
@@ -248,38 +282,45 @@ export const fuzzyRangesRule: RuleModule = {
           start = monthStart;
           end = monthStart.plus({ days: numDays - 1 }).endOf('day');
         } else {
-          start = monthEnd.minus({ days: numDays - 1 }).startOf('day');
           end = monthEnd;
+          start = end.minus({ days: numDays - 1 }).startOf('day');
         }
 
-        return {
-          type: 'range',
+        const matchStart = matches.index + (fullMatch.startsWith(' ') ? 1 : 0);
+        const matchEnd = matchStart + fullMatch.trim().length;
+
+        return createFuzzyRangeComponent(
           start,
           end,
-          confidence: 1.0,
-          text: matches[0]
-        };
+          { start: matchStart, end: matchEnd },
+          fullMatch.trim(),
+          preferences
+        );
       }
     },
     {
       regex: /^(?:next|following)\s+(\d+)\s+weekends$/i,
-      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
         const count = parseInt(matches[1], 10);
         if (isNaN(count)) return null;
 
         const { start, end } = getMultipleWeekendRange(preferences.referenceDate || DateTime.now(), 1, count);
-        return {
-          type: 'range',
+        
+        const matchStart = matches.index + (matches[0].startsWith(' ') ? 1 : 0);
+        const matchEnd = matchStart + matches[0].trim().length;
+
+        return createFuzzyRangeComponent(
           start,
           end,
-          confidence: 1.0,
-          text: matches[0]
-        };
+          { start: matchStart, end: matchEnd },
+          matches[0].trim(),
+          preferences
+        );
       }
     },
     {
       regex: /^(?:the\s+)?(beginning|middle|mid|end|start|early|late)(?:\s+(?:of|in)\s+(?:the\s+)?|\s+|\-)(next\s+month)$/i,
-      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
         const [fullMatch, part] = matches;
         if (!part) return null;
 
@@ -311,21 +352,16 @@ export const fuzzyRangesRule: RuleModule = {
           end = monthStart.endOf('month');
         }
 
-        Logger.debug('Parsing next month fuzzy range', {
-          part: normalizedPart,
-          targetMonth,
-          targetYear,
-          start: start.toISO(),
-          end: end.toISO()
-        });
-        
-        return {
-          type: 'range',
+        const matchStart = matches.index + (fullMatch.startsWith(' ') ? 1 : 0);
+        const matchEnd = matchStart + fullMatch.trim().length;
+
+        return createFuzzyRangeComponent(
           start,
           end,
-          confidence: 1.0,
-          text: fullMatch
-        };
+          { start: matchStart, end: matchEnd },
+          fullMatch.trim(),
+          preferences
+        );
       }
     }
   ]

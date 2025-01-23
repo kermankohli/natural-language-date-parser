@@ -1,6 +1,7 @@
-import { RuleModule, ParseResult, DateParsePreferences, Pattern } from '../types/types';
+import { RuleModule, DateParsePreferences, Pattern } from '../types/types';
 import { Logger } from '../utils/Logger';
 import { DateTime } from 'luxon';
+import { ParseComponent } from '../resolver/resolution-engine';
 
 const MONTHS = {
   january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
@@ -64,13 +65,32 @@ function findNthWeekOfMonth(year: number, month: number, n: number, weekStartsOn
   }
 }
 
+function createOrdinalWeekComponent(
+  start: DateTime,
+  end: DateTime,
+  span: { start: number; end: number },
+  originalText: string,
+  preferences: DateParsePreferences
+): ParseComponent {
+  return {
+    type: 'range',
+    span,
+    value: { start, end },
+    confidence: 1.0,
+    metadata: {
+      isOrdinalWeek: true,
+      originalText
+    }
+  };
+}
+
 export const ordinalWeeksRule: RuleModule = {
   name: 'ordinal-weeks',
   patterns: [
     {
       regex: /^(first|1st|second|2nd|third|3rd|fourth|4th|fifth|5th|last|second\s+to\s+last|third\s+to\s+last)\s+week\s+(?:of|in)\s+(january|february|march|april|may|june|july|august|september|october|november|december)$/i,
-      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
-        const [, ordinal, month] = matches;
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
+        const [fullMatch, ordinal, month] = matches;
         
         // Convert ordinal to number
         let n: number;
@@ -103,13 +123,16 @@ export const ordinalWeeksRule: RuleModule = {
 
         const { start, end } = getWeekRange(targetDate, weekStartsOn);
 
-        return {
-          type: 'range',
+        const matchStart = matches.index + (fullMatch.startsWith(' ') ? 1 : 0);
+        const matchEnd = matchStart + fullMatch.trim().length;
+
+        return createOrdinalWeekComponent(
           start,
           end,
-          confidence: 1.0,
-          text: matches[0]
-        };
+          { start: matchStart, end: matchEnd },
+          fullMatch.trim(),
+          preferences
+        );
       }
     }
   ]

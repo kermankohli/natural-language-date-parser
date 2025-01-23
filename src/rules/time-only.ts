@@ -1,9 +1,16 @@
-import { RuleModule, IntermediateParse, ParseResult, DateParsePreferences, ParserState, Pattern } from '../types/types';
+import { RuleModule, DateParsePreferences } from '../types/types';
 import { DateTime } from 'luxon';
+import { ParseComponent } from '../resolver/resolution-engine';
 
-function createTimeResult(hour: number, minute: number, preferences?: DateParsePreferences): ParseResult {
+function createTimeComponent(
+  hour: number, 
+  minute: number, 
+  span: { start: number; end: number },
+  originalText: string,
+  preferences?: DateParsePreferences
+): ParseComponent {
   const referenceDate = preferences?.referenceDate || DateTime.now();
-  let start = DateTime.fromObject({
+  let value = DateTime.fromObject({
     year: referenceDate.year,
     month: referenceDate.month,
     day: referenceDate.day,
@@ -12,93 +19,101 @@ function createTimeResult(hour: number, minute: number, preferences?: DateParseP
   }, { zone: 'UTC' });
 
   return {
-    type: 'single',
-    start,
+    type: 'time',
+    span,
+    value,
     confidence: 1,
-    text: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
+    metadata: {
+      originalText
+    }
   };
 }
 
-const patterns: Pattern[] = [
-  {
-    regex: /(?:^|\s)(?:at\s+)?(\d{1,2}):(\d{2})(?:\s*(AM|PM))?(?:\s|$)/i,
-    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
-      let [_, hours, minutes, meridiem] = matches;
-      let hour = parseInt(hours);
-      const minute = parseInt(minutes);
+export const timeOnlyRule: RuleModule = {
+  name: 'time-only',
+  patterns: [
+    {
+      regex: /(?:^|\s)(?:at\s+)?(\d{1,2}):(\d{2})(?:\s*(AM|PM))?(?:\s|$)/i,
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
+        let [fullMatch, hours, minutes, meridiem] = matches;
+        let hour = parseInt(hours);
+        const minute = parseInt(minutes);
 
-      if (minute >= 60) return null;
+        if (minute >= 60) return null;
 
-      if (meridiem) {
+        if (meridiem) {
+          if (hour > 12) return null;
+          if (meridiem.toUpperCase() === 'PM' && hour < 12) hour += 12;
+          if (meridiem.toUpperCase() === 'AM' && hour === 12) hour = 0;
+        } else {
+          if (hour >= 24) return null;
+        }
+
+        const matchStart = matches.index + (fullMatch.startsWith(' ') ? 1 : 0);
+        const matchEnd = matchStart + fullMatch.trim().length;
+
+        return createTimeComponent(
+          hour, 
+          minute, 
+          { start: matchStart, end: matchEnd },
+          fullMatch.trim(),
+          preferences
+        );
+      }
+    },
+    {
+      regex: /(?:^|\s)(?:at\s+)?(\d{1,2})(?:\s*)(AM|PM)(?:\s|$)/i,
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
+        let [fullMatch, hours, meridiem] = matches;
+        let hour = parseInt(hours);
+
         if (hour > 12) return null;
         if (meridiem.toUpperCase() === 'PM' && hour < 12) hour += 12;
         if (meridiem.toUpperCase() === 'AM' && hour === 12) hour = 0;
-      } else {
-        if (hour >= 24) return null;
+
+        const matchStart = matches.index + (fullMatch.startsWith(' ') ? 1 : 0);
+        const matchEnd = matchStart + fullMatch.trim().length;
+
+        return createTimeComponent(
+          hour, 
+          0, 
+          { start: matchStart, end: matchEnd },
+          fullMatch.trim(),
+          preferences
+        );
       }
+    },
+    {
+      regex: /(?:^|\s)(?:at\s+)?noon(?:\s|$)/i,
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent => {
+        const fullMatch = matches[0];
+        const matchStart = matches.index + (fullMatch.startsWith(' ') ? 1 : 0);
+        const matchEnd = matchStart + fullMatch.trim().length;
 
-      return createTimeResult(hour, minute, preferences);
+        return createTimeComponent(
+          12, 
+          0, 
+          { start: matchStart, end: matchEnd },
+          fullMatch.trim(),
+          preferences
+        );
+      }
+    },
+    {
+      regex: /(?:^|\s)(?:at\s+)?midnight(?:\s|$)/i,
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent => {
+        const fullMatch = matches[0];
+        const matchStart = matches.index + (fullMatch.startsWith(' ') ? 1 : 0);
+        const matchEnd = matchStart + fullMatch.trim().length;
+
+        return createTimeComponent(
+          0, 
+          0, 
+          { start: matchStart, end: matchEnd },
+          fullMatch.trim(),
+          preferences
+        );
+      }
     }
-  },
-  {
-    regex: /(?:^|\s)(?:at\s+)?(\d{1,2})(?:\s*)(AM|PM)(?:\s|$)/i,
-    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
-      let [_, hours, meridiem] = matches;
-      let hour = parseInt(hours);
-
-      if (hour > 12) return null;
-      if (meridiem.toUpperCase() === 'PM' && hour < 12) hour += 12;
-      if (meridiem.toUpperCase() === 'AM' && hour === 12) hour = 0;
-
-      return createTimeResult(hour, 0, preferences);
-    }
-  },
-  {
-    regex: /(?:^|\s)(?:at\s+)?noon(?:\s|$)/i,
-    parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
-      return createTimeResult(12, 0, preferences);
-    }
-  },
-  {
-    regex: /(?:^|\s)(?:at\s+)?midnight(?:\s|$)/i,
-    parse: (_: RegExpExecArray, preferences: DateParsePreferences): ParseResult => {
-      return createTimeResult(0, 0, preferences);
-    }
-  }
-];
-
-export const timeOnlyRule: RuleModule = {
-  name: 'time-only',
-  patterns
-};
-
-export function parse(state: ParserState, input: string, preferences?: DateParsePreferences): ParseResult | null {
-  const timePattern = /^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i;
-  const match = input.match(timePattern);
-
-  if (!match) {
-    if (input.toLowerCase() === 'noon') {
-      return createTimeResult(12, 0, preferences);
-    }
-    if (input.toLowerCase() === 'midnight') {
-      return createTimeResult(0, 0, preferences);
-    }
-    return null;
-  }
-
-  let [_, hours, minutes, meridiem] = match;
-  let hour = parseInt(hours);
-  const minute = parseInt(minutes);
-
-  if (minute >= 60) return null;
-
-  if (meridiem) {
-    if (hour > 12) return null;
-    if (meridiem.toUpperCase() === 'PM' && hour < 12) hour += 12;
-    if (meridiem.toUpperCase() === 'AM' && hour === 12) hour = 0;
-  } else {
-    if (hour >= 24) return null;
-  }
-
-  return createTimeResult(hour, minute, preferences);
-} 
+  ]
+}; 

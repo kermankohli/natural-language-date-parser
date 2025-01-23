@@ -1,7 +1,29 @@
 import { DateTime } from 'luxon';
-import { DateParsePreferences, ParseResult, RuleModule, Pattern } from '../types/types';
+import { DateParsePreferences, RuleModule, Pattern } from '../types/types';
+import { ParseComponent } from '../resolver/resolution-engine';
 
-export function parse(state: { preferences: DateParsePreferences }, input: string, preferences?: DateParsePreferences): ParseResult | null {
+function createDateComponent(
+  date: DateTime,
+  span: { start: number; end: number },
+  originalText: string,
+  preferences?: DateParsePreferences
+): ParseComponent {
+  const targetZone = preferences?.timeZone || preferences?.referenceDate?.zoneName || 'UTC';
+  const finalDate = date.setZone(targetZone, { keepLocalTime: true });
+
+  return {
+    type: 'date',
+    value: finalDate,
+    span,
+    confidence: 1.0,
+    metadata: {
+      isAbsolute: true,
+      originalText
+    }
+  };
+}
+
+export function parse(state: { preferences: DateParsePreferences }, input: string, preferences?: DateParsePreferences): ParseComponent | null {
   const datePattern = /^(\d{4})-(\d{2})-(\d{2})$/;
   const matches = input.match(datePattern);
   if (!matches) return null;
@@ -11,24 +33,19 @@ export function parse(state: { preferences: DateParsePreferences }, input: strin
     parseInt(year),
     parseInt(month),
     parseInt(day)
-  ).setZone(preferences?.timeZone, { keepLocalTime: true });
+  );
 
   if (!date.isValid) {
     return null;
   }
 
-  return {
-    type: 'single',
-    start: date,
-    confidence: 1,
-    text: matches[0]
-  };
+  return createDateComponent(date, { start: 0, end: matches[0].length }, matches[0], preferences);
 }
 
 const patterns: Pattern[] = [
   {
     regex: /^(\d{4})-(\d{2})-(\d{2})$/,
-    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseResult | null => {
+    parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
       const [_, year, month, day] = matches;
       const date = DateTime.utc(
         parseInt(year),
@@ -40,12 +57,7 @@ const patterns: Pattern[] = [
         return null;
       }
 
-      return {
-        type: 'single',
-        start: date,
-        confidence: 1,
-        text: matches[0]
-      };
+      return createDateComponent(date, { start: 0, end: matches[0].length }, matches[0], preferences);
     }
   }
 ];

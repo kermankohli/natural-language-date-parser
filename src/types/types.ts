@@ -1,5 +1,6 @@
 import { DateTime } from 'luxon';
 import { ParseTrace } from '../utils/debug-trace';
+import { ParseComponent } from '../resolver/resolution-engine';
 
 
 /**
@@ -72,7 +73,7 @@ export interface RuleModule {
 
 export interface Pattern {
   regex: RegExp;
-  parse: (matches: RegExpExecArray, preferences: DateParsePreferences) => ParseResult | null;
+  parse: (matches: RegExpExecArray, preferences: DateParsePreferences) => ParseComponent | null;
 }
 
 export interface SingleDateResult {
@@ -104,12 +105,3 @@ export interface IntermediateParse {
   captures?: { [key: string]: string };
   tokens?: string[];
 }
-
-/**
- * A module containing rules for parsing dates
- */
-export interface RulePattern {
-  name: string;
-  regex: RegExp;
-  parse: (matches: RegExpMatchArray, prefs: DateParsePreferences) => IntermediateParse | null;
-} 
