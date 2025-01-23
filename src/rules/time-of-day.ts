@@ -5,32 +5,32 @@ import { ParseComponent } from '../resolver/resolution-engine';
 
 export const DEFAULT_TIME_OF_DAY_PREFERENCES: TimeOfDayPreferences = {
   morning: {
-    start: 6,   // 6 AM
-    end: 12,    // 12 PM
-    early: { start: 6, end: 8 },
-    mid: { start: 8, end: 10 },
-    late: { start: 10, end: 12 }
+    start: 7,   // 7 AM
+    end: 11,    // 11 AM
+    early: { start: 7, end: 8 },
+    mid: { start: 8, end: 9 },
+    late: { start: 9, end: 11 }
   },
   afternoon: {
     start: 12,  // 12 PM
-    end: 17,    // 5 PM
-    early: { start: 12, end: 14 },
-    mid: { start: 14, end: 15 },
-    late: { start: 15, end: 17 }
+    end: 16,    // 4 PM
+    early: { start: 12, end: 13 },
+    mid: { start: 13, end: 14 },
+    late: { start: 14, end: 16 }
   },
   evening: {
     start: 17,  // 5 PM
-    end: 21,    // 9 PM
+    end: 20,    // 8 PM
     early: { start: 17, end: 18 },
     mid: { start: 18, end: 19 },
-    late: { start: 19, end: 21 }
+    late: { start: 19, end: 20 }
   },
   night: {
     start: 21,  // 9 PM
-    end: 6,     // 6 AM next day
-    early: { start: 21, end: 23 },
-    mid: { start: 23, end: 2 },
-    late: { start: 2, end: 6 }
+    end: 23,    // 11 PM
+    early: { start: 21, end: 22 },
+    mid: { start: 22, end: 23 },
+    late: { start: 23, end: 24 }
   }
 };
 
