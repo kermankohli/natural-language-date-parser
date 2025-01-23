@@ -66,6 +66,8 @@ export const createNLDP = (preferences: DateParsePreferences = {}): NLDP => {
   // If useLocalTimezone is true, set the timeZone to the system's local timezone
   if (preferences.useLocalTimezone) {
     preferences.timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } else {
+    preferences.timeZone = preferences.timeZone || 'UTC';
   }
   
   let state = createParserState(preferences);

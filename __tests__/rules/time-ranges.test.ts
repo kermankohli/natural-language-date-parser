@@ -59,8 +59,8 @@ describe('Time Ranges Rule', () => {
       
       expect(value.end.hour).toBe(17);
       expect(value.end.minute).toBe(0);
-      expect(value.end.second).toBe(59);
-      expect(value.end.millisecond).toBe(999);
+      expect(value.end.second).toBe(0);
+      expect(value.end.millisecond).toBe(0);
       
       expect(result?.metadata?.rangeType).toBe('time');
       expect(result?.metadata?.originalText).toBe('15:30 to 17:00');

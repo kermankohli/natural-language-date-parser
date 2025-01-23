@@ -73,16 +73,12 @@ export const groupCompatibleComponents = (components: ParseComponent[]): ParseCo
  * Combine a date component with a time component
  */
 const combineDateAndTime = (date: DateTime, time: DateTime): DateTime => {
-  // First set the time components while preserving the date's timezone
-  const combined = date.set({
+  return date.set({
     hour: time.hour,
     minute: time.minute,
-    second: time.second
+    second: time.second,
+    millisecond: 0
   });
-  
-  // Ensure we keep the date's timezone
-  const zone = date.zoneName || 'UTC';
-  return combined.setZone(zone);
 };
 
 /**
@@ -105,6 +101,7 @@ export const resolveGroup = (components: ParseComponent[]): ParseComponent | nul
 
   let baseDate: DateTime | null = null;
   let baseTime: DateTime | null = null;
+  let dateRange: { start: DateTime; end: DateTime } | null = null;
   let timeRange: { start: DateTime; end: DateTime } | null = null;
   
   // Process each component
@@ -124,12 +121,24 @@ export const resolveGroup = (components: ParseComponent[]): ParseComponent | nul
           continue;
         }
         const range = component.value as { start: DateTime; end: DateTime };
-        timeRange = range;
-        // If this is a time-of-day range, preserve the hours but use the base date
-        if (baseDate && component.metadata?.rangeType === 'timeOfDay') {
-          const start = combineDateAndTime(baseDate, range.start);
-          const end = combineDateAndTime(baseDate, range.end);
-          timeRange = { start, end };
+        
+        // If this is a date-based range (like next week), store it separately
+        if (component.metadata?.rangeType === 'relativeWeek' || 
+            component.metadata?.rangeType === 'ordinalWeek' ||
+            component.metadata?.dateType === 'relative') {
+          dateRange = range;
+        } else if (component.metadata?.rangeType === 'timeOfDay') {
+          // If this is a time-of-day range, preserve the hours but use the base date
+          if (baseDate) {
+            const start = combineDateAndTime(baseDate, range.start);
+            const end = combineDateAndTime(baseDate, range.end);
+            timeRange = { start, end };
+          } else {
+            timeRange = range;
+          }
+        } else {
+          // Assume it's a time range
+          timeRange = range;
         }
         break;
     }
@@ -142,7 +151,38 @@ export const resolveGroup = (components: ParseComponent[]): ParseComponent | nul
   };
 
   // Combine components into final result
-  if (timeRange) {
+  if (dateRange && timeRange) {
+    // If we have both date range and time range, apply time to the date range's start
+    const start = dateRange.start.set({
+      hour: timeRange.start.hour,
+      minute: timeRange.start.minute,
+      second: 0,
+      millisecond: 0
+    });
+    const end = dateRange.end.set({
+      hour: timeRange.end.hour,
+      minute: timeRange.end.minute,
+      second: 0,
+      millisecond: 0
+    });
+    // Preserve original timezone if available
+    const startZone = timeRange.start.zoneName || 'UTC';
+    const endZone = timeRange.end.zoneName || 'UTC';
+    return {
+      type: 'range',
+      span,
+      confidence: Math.min(...components.map(c => c.confidence)),
+      value: { 
+        start: start.setZone(startZone),
+        end: end.setZone(endZone)
+      },
+      metadata: {
+        originalText: components.map(c => c.metadata?.originalText).join(' '),
+        dateType: 'relative',
+        rangeType: 'time'
+      }
+    };
+  } else if (timeRange) {
     // If we have a date, apply it to the range
     if (baseDate) {
       const start = combineDateAndTime(baseDate, timeRange.start);
@@ -173,6 +213,18 @@ export const resolveGroup = (components: ParseComponent[]): ParseComponent | nul
         start: timeRange.start.setZone(startZone),
         end: timeRange.end.setZone(endZone)
       },
+      span,
+      confidence: components.reduce((acc, c) => acc * c.confidence, 1),
+      metadata: {
+        originalText: components.map(c => c.metadata?.originalText).join(' '),
+        ...components.reduce((acc, c) => ({ ...acc, ...c.metadata }), {})
+      }
+    };
+  } else if (dateRange) {
+    // If we have just a date range (like ordinal weeks), return it as is
+    return {
+      type: 'range',
+      value: dateRange,
       span,
       confidence: components.reduce((acc, c) => acc * c.confidence, 1),
       metadata: {
@@ -253,7 +305,7 @@ export const resolveComponents = (
   // Group compatible components
   const groups = groupCompatibleComponents(components);
 
-  // console.log(JSON.stringify(groups, null, 2));
+  console.log(JSON.stringify(groups, null, 2));
 
   // Resolve each group
   const results = groups

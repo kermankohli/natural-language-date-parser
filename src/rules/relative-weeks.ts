@@ -75,7 +75,7 @@ function getLastWeekRange(date: DateTime, weekStartsOn: number = 1, preferences:
 
 const patterns: Pattern[] = [
   {
-    regex: /^(this|next|last)\s+week$/i,
+    regex: /^(this|next|last)\s+week(?:\s+|$)/i,
     parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
       const [fullMatch, modifier] = matches;
 

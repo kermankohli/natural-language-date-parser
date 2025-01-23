@@ -41,7 +41,7 @@ function createTimeRangeComponent(
   };
 
   let start = createTime(startHour, startMinute);
-  let end = createTime(endHour, endMinute, 59, 999);
+  let end = createTime(endHour, endMinute, 0, 0);
 
   // Compare times in the same timezone
   if (end < start) {

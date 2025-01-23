@@ -145,6 +145,12 @@ describe('Natural Language Date Parser', () => {
       expect(result?.end?.toUTC().hour).toBe(17);
       expect(result?.end?.toUTC().minute).toBe(0);
     });
+
+    it('should parse next week with time range', () => {
+      const result = parser.parse('next week from 9am to 10am',{debug: true});
+      expect(result?.start.toUTC().toISO()).toBe('2024-03-18T09:00:00.000Z');
+      expect(result?.end?.toUTC().toISO()).toBe('2024-03-24T10:00:00.000Z');
+    });
   });
 
   describe('timezone handling', () => {
