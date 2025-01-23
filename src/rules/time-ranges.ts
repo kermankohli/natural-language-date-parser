@@ -13,24 +13,37 @@ function createTimeRangeComponent(
   preferences?: DateParsePreferences
 ): ParseComponent {
   const referenceDate = preferences?.referenceDate || DateTime.now();
-  const zone = preferences?.timeZone || referenceDate.zoneName || 'UTC';
-  
-  // Create start and end times in the target timezone
-  let start = referenceDate.setZone(zone).set({
-    hour: startHour,
-    minute: startMinute,
-    second: 0,
-    millisecond: 0
-  });
 
-  let end = referenceDate.setZone(zone).set({
-    hour: endHour,
-    minute: endMinute,
-    second: 59,
-    millisecond: 999
-  });
+  // Create times in target timezone first if specified, otherwise UTC
+  const createTime = (hour: number, minute: number, seconds = 0, milliseconds = 0) => {
+    return preferences?.timeZone
+      ? DateTime.fromObject(
+          {
+            year: referenceDate.year,
+            month: referenceDate.month,
+            day: referenceDate.day,
+            hour,
+            minute,
+            second: seconds,
+            millisecond: milliseconds
+          },
+          { zone: preferences.timeZone }
+        )
+      : DateTime.utc(
+          referenceDate.year,
+          referenceDate.month,
+          referenceDate.day,
+          hour,
+          minute,
+          seconds,
+          milliseconds
+        );
+  };
 
-  // If end time is before start time, assume it's the next day
+  let start = createTime(startHour, startMinute);
+  let end = createTime(endHour, endMinute, 59, 999);
+
+  // Compare times in the same timezone
   if (end < start) {
     end = end.plus({ days: 1 });
   }

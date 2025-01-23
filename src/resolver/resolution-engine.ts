@@ -73,11 +73,16 @@ export const groupCompatibleComponents = (components: ParseComponent[]): ParseCo
  * Combine a date component with a time component
  */
 const combineDateAndTime = (date: DateTime, time: DateTime): DateTime => {
-  return date.set({
+  // First set the time components while preserving the date's timezone
+  const combined = date.set({
     hour: time.hour,
     minute: time.minute,
     second: time.second
   });
+  
+  // Ensure we keep the date's timezone
+  const zone = date.zoneName || 'UTC';
+  return combined.setZone(zone);
 };
 
 /**
@@ -142,9 +147,15 @@ export const resolveGroup = (components: ParseComponent[]): ParseComponent | nul
     if (baseDate) {
       const start = combineDateAndTime(baseDate, timeRange.start);
       const end = combineDateAndTime(baseDate, timeRange.end);
+      // Preserve original timezone if available
+      const startZone = timeRange.start.zoneName || 'UTC';
+      const endZone = timeRange.end.zoneName || 'UTC';
       return {
         type: 'range',
-        value: { start, end },
+        value: { 
+          start: start.setZone(startZone),
+          end: end.setZone(endZone)
+        },
         span,
         confidence: components.reduce((acc, c) => acc * c.confidence, 1),
         metadata: {
@@ -153,10 +164,15 @@ export const resolveGroup = (components: ParseComponent[]): ParseComponent | nul
         }
       };
     }
-    // Otherwise just return the range
+    // Otherwise just return the range with its original timezone
+    const startZone = timeRange.start.zoneName || 'UTC';
+    const endZone = timeRange.end.zoneName || 'UTC';
     return {
       type: 'range',
-      value: timeRange,
+      value: {
+        start: timeRange.start.setZone(startZone),
+        end: timeRange.end.setZone(endZone)
+      },
       span,
       confidence: components.reduce((acc, c) => acc * c.confidence, 1),
       metadata: {
@@ -169,35 +185,6 @@ export const resolveGroup = (components: ParseComponent[]): ParseComponent | nul
   // If we have both date and time
   if (baseDate && baseTime) {
     const datetime = combineDateAndTime(baseDate, baseTime);
-    // Only consider range types that weren't skipped
-    const hasRangeType = components.some(c => 
-      c.type === 'range' && 
-      !(c.metadata?.rangeType === 'timeOfDay' && baseTime)
-    );
-    
-    if (hasRangeType) {
-      const rangeComponent = components.find(c => 
-        c.type === 'range' && 
-        !(c.metadata?.rangeType === 'timeOfDay' && baseTime)
-      );
-      
-      if (rangeComponent?.value && 'start' in rangeComponent.value) {
-        const range = rangeComponent.value;
-        const start = combineDateAndTime(baseDate, range.start);
-        const end = combineDateAndTime(baseDate, range.end);
-        return {
-          type: 'range',
-          value: { start, end },
-          span,
-          confidence: components.reduce((acc, c) => acc * c.confidence, 1),
-          metadata: {
-            originalText: components.map(c => c.metadata?.originalText).filter(Boolean).join(' '),
-            ...components.reduce((acc, c) => ({ ...acc, ...c.metadata }), {})
-          }
-        };
-      }
-    }
-    
     return {
       type: 'date',
       value: datetime,
@@ -266,10 +253,14 @@ export const resolveComponents = (
   // Group compatible components
   const groups = groupCompatibleComponents(components);
 
+  // console.log(JSON.stringify(groups, null, 2));
+
   // Resolve each group
   const results = groups
     .map(group => resolveGroup(group))
     .filter((result): result is ParseComponent => result !== null);
+
+  // console.log(JSON.stringify(results, null, 2));
   
   if (results.length === 0) return null;
   

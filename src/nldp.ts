@@ -36,21 +36,26 @@ function componentToResult(component: ParseComponent | null): ParseResult | null
 
   if (component.type === 'range') {
     const range = component.value as { start: DateTime; end: DateTime };
+    // Preserve original timezone
+    const startZone = range.start.zoneName || 'UTC';
+    const endZone = range.end.zoneName || 'UTC';
     return {
       type: resultType,
       confidence: component.confidence,
-      start: range.start,
-      end: range.end,
+      start: range.start.setZone(startZone),
+      end: range.end.setZone(endZone),
       text: component.metadata?.originalText || '',
       debugTrace: component.debugTrace
     };
   }
 
   const date = component.value as DateTime;
+  // Preserve original timezone
+  const zone = date.zoneName || 'UTC';
   return {
     type: resultType,
     confidence: component.confidence,
-    start: date,
+    start: date.setZone(zone),
     end: undefined,
     text: component.metadata?.originalText || '',
     debugTrace: component.debugTrace

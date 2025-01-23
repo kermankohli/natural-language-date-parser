@@ -24,7 +24,7 @@ export function parseTimeString(
   }
 
   const TIME_24H = /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(Z|[+-]\d{1,2}(?::?\d{2})?)?$/i;
-  const TIME_12H = /^(\d{1,2})(?::(\d{2})?)?(?::(\d{2})?)?(?:\s*(am|pm))(?:\s*(Z|[+-]\d{1,2}(?::?\d{2})?)?)?$/i;
+  const TIME_12H = /^(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?\s*?(am|pm)(?:\s*(Z|[+-]\d{1,2}(?::?\d{2})?)?)?$/i;
 
   let match = timeStr.match(TIME_24H);
   let is12Hour = false;

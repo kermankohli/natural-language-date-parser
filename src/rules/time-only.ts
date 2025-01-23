@@ -10,13 +10,26 @@ function createTimeComponent(
   preferences?: DateParsePreferences
 ): ParseComponent {
   const referenceDate = preferences?.referenceDate || DateTime.now();
-  let value = DateTime.fromObject({
-    year: referenceDate.year,
-    month: referenceDate.month,
-    day: referenceDate.day,
-    hour,
-    minute
-  }, { zone: 'UTC' });
+  
+  // Create time in target timezone first if specified, otherwise UTC
+  let value = preferences?.timeZone 
+    ? DateTime.fromObject(
+        {
+          year: referenceDate.year,
+          month: referenceDate.month,
+          day: referenceDate.day,
+          hour,
+          minute
+        },
+        { zone: preferences.timeZone }
+      )
+    : DateTime.utc(
+        referenceDate.year,
+        referenceDate.month,
+        referenceDate.day,
+        hour,
+        minute
+      );
 
   return {
     type: 'time',
