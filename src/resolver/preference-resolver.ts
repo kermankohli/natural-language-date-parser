@@ -20,11 +20,6 @@ export function resolvePreferences(
   const applyToDateTime = (dt: DateTime): DateTime => {
     let result = dt;
     
-    // Apply timezone if different
-    if (dt.zone.name !== timeZone) {
-      result = dt.setZone(timeZone);
-    }
-    
     // If date is relative (no year/month/day), use reference date
     if (!dt.isValid || dt.year === 1970) {
       result = referenceDate.set({
@@ -32,6 +27,15 @@ export function resolvePreferences(
         minute: dt.minute,
         second: dt.second
       });
+    }
+    
+    // For UTC, convert directly to UTC
+    if (timeZone === 'UTC') {
+      result = dt.toUTC();
+    }
+    // For other timezones, preserve wall time
+    else if (dt.zone.name !== timeZone) {
+      result = dt.setZone(timeZone, { keepLocalTime: true });
     }
     
     return result;

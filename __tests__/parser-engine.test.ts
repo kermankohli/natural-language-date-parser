@@ -54,7 +54,7 @@ describe('Parser Engine', () => {
     expect(result!.type).toBe('date');
     expect(result!.span).toEqual({ start: 0, end: 4 });
     expect(result!.metadata?.originalText).toBe('test');
-    expect((result!.value as DateTime).toISO()).toBe(referenceDate.toISO());
+    expect((result!.value as DateTime).toUTC().toISO()).toBe(referenceDate.toUTC().toISO());
   });
 
   test('should return null for unmatched input', () => {
