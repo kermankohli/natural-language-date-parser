@@ -219,7 +219,7 @@ describe('Natural Language Date Parser', () => {
     });
   });
 
-  describe.only('Time of Day Integration', () => {
+  describe('Time of Day Integration', () => {
     test('should parse date with time of day', () => {
       const result = parser.parse('tomorrow morning', { referenceDate });
       expect(result).not.toBeNull();

@@ -146,10 +146,10 @@ const patterns: Pattern[] = [
       if (timezone) {
         // Convert timezone offset from ±HHMM to ±HH:MM format
         const formattedTz = timezone.replace(/([+-])(\d{2})(\d{2})/, '$1$2:$3');
-        date = date.setZone(formattedTz, { keepLocalTime: true });
+        date = date.setZone(formattedTz);
       } else if (preferences.timeZone) {
         // If no explicit timezone but preferences has one
-        date = date.setZone(preferences.timeZone, { keepLocalTime: true });
+        date = date.setZone(preferences.timeZone);
       }
 
       // Convert to UTC for storage
@@ -192,10 +192,10 @@ const patterns: Pattern[] = [
       if (timezone) {
         // Convert timezone offset from ±HHMM to ±HH:MM format
         const formattedTz = timezone.replace(/([+-])(\d{2})(\d{2})/, '$1$2:$3');
-        date = date.setZone(formattedTz, { keepLocalTime: true });
+        date = date.setZone(formattedTz);
       } else if (preferences.timeZone) {
         // If no explicit timezone but preferences has one
-        date = date.setZone(preferences.timeZone, { keepLocalTime: true });
+        date = date.setZone(preferences.timeZone);
       }
 
       // Convert to UTC for storage
@@ -234,7 +234,7 @@ const patterns: Pattern[] = [
 
       // Handle timezone if preferences has one
       if (preferences.timeZone) {
-        date = date.setZone(preferences.timeZone, { keepLocalTime: true });
+        date = date.setZone(preferences.timeZone);
       }
 
       // Convert to UTC for storage

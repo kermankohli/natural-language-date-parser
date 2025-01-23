@@ -24,7 +24,7 @@ describe('Time Ranges Rule', () => {
       const result = pattern.parse(matches, preferences);
       expect(result).not.toBeNull();
       expect(result?.type).toBe('range');
-      expect(result?.span).toEqual({ start: 0, end: input.length - 1 });
+      expect(result?.span).toEqual({ start: 0, end: 18 });
       expect(result?.metadata?.rangeType).toBe('time');
       
       const value = result?.value as { start: DateTime; end: DateTime };

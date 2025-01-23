@@ -31,9 +31,14 @@ const createOrdinalDayComponent = (
   originalText: string,
   preferences: DateParsePreferences
 ): ParseComponent => {
-  // Ensure we're using the reference year if available
-  const referenceYear = preferences.referenceDate?.year || DateTime.now().year;
-  const dateWithCorrectYear = date.set({ year: referenceYear });
+  // Only use reference year if the date's year is the current year
+  const currentYear = DateTime.now().year;
+  const dateYear = date.year;
+  const referenceYear = preferences.referenceDate?.year || currentYear;
+  
+  // If the date already has a specific year (not current year), keep it
+  const finalYear = dateYear !== currentYear ? dateYear : referenceYear;
+  const dateWithCorrectYear = date.set({ year: finalYear });
 
   return {
     type: 'date',
