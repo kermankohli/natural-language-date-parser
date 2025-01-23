@@ -297,6 +297,36 @@ describe('Relative Ordinal Expressions', () => {
         }
       }
     });
+
+    test('simple after', () => {
+      const input = 'after the 26th';
+      const pattern = findPatternForInput(input);
+      const matches = pattern?.regex.exec(input);
+      
+      if (matches && pattern) {
+        const result = pattern.parse(matches, { referenceDate });
+        expect(result?.type).toBe('range');
+        if (result?.type === 'range' && result.value && typeof result.value === 'object' && 'start' in result.value) {
+          expect(result.value.start.toUTC().toISO()?.slice(0, 10)).toBe('2023-03-26');
+          expect(result.value.end?.toUTC().toISO()?.slice(0, 10)).toBe('2023-04-26');
+        }
+      }
+    });
+
+    test('after with month', () => {
+      const input = 'after the 8th of jan';
+      const pattern = findPatternForInput(input);
+      const matches = pattern?.regex.exec(input);
+      
+      if (matches && pattern) {
+        const result = pattern.parse(matches, { referenceDate });
+        expect(result?.type).toBe('range');
+        if (result?.type === 'range' && result.value && typeof result.value === 'object' && 'start' in result.value) {
+          expect(result.value.start.toUTC().toISO()?.slice(0, 10)).toBe('2024-01-08');
+          expect(result.value.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-02-08');
+        }
+      }
+    });
   });
 });
 

@@ -207,7 +207,7 @@ export const ordinalDaysRule: RuleModule = {
     },
     {
       // Pattern for "after/starting from" expressions
-      regex: /^(?:(?:anytime\s+)?(?:after|starting\s+from|from|beginning\s+from|starting|beginning)\s+(?:on|at|from)?)\s+(?:the\s+)?(?:(\d+)(?:st|nd|rd|th)|first|second|third|fourth|fifth)(?:\s+(?:of\s+)?(?:the\s+)?(?:month\s+(?:of\s+)?)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec))?$/i,
+      regex: /^(?:(?:anytime\s+)?(?:after|starting\s+from|from|beginning\s+from|starting|beginning)\s+(?:on|at|from)?|after)\s+(?:the\s+)?(?:(\d+)(?:st|nd|rd|th)|first|second|third|fourth|fifth)(?:\s+(?:of\s+)?(?:the\s+)?(?:month\s+(?:of\s+)?)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec))?$/i,
       parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
         Logger.debug('Parsing relative ordinal day (after)', { matches });
         const [fullMatch, ordinalOrNumber, month] = matches;
@@ -217,7 +217,10 @@ export const ordinalDaysRule: RuleModule = {
           dayNum = parseInt(ordinalOrNumber, 10);
           if (isNaN(dayNum)) return null;
         } else {
-          const ordinal = matches[0].split(' ')[1].toLowerCase();
+          // Get the word after "after" or "from" or "starting"
+          const words = matches[0].toLowerCase().split(/\s+/);
+          const ordinalIndex = words.findIndex(w => w === 'the') + 1;
+          const ordinal = words[ordinalIndex];
           dayNum = ORDINALS[ordinal];
           if (!dayNum) return null;
         }
