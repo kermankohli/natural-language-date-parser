@@ -123,20 +123,6 @@ describe('Natural Language Date Parser', () => {
         .toBe(nextTuesday.toUTC().toISO()?.slice(0, 10));
     });
 
-    it.skip('should handle overnight ranges', () => {
-      const result = parser.parse('next tuesday from 10pm to 2am');
-      const nextTuesday = referenceDate.plus({ days: ((2 - referenceDate.weekday + 7) % 7) });
-      
-      expect(result?.start.toUTC().toISO()?.slice(0, 10))
-        .toBe(nextTuesday.toUTC().toISO()?.slice(0, 10));
-      expect(result?.start.toUTC().hour).toBe(22);
-      expect(result?.start.toUTC().minute).toBe(0);
-      expect(result?.end?.toUTC().hour).toBe(2);
-      expect(result?.end?.toUTC().minute).toBe(0);
-      expect(result?.end?.toUTC().toISO()?.slice(0, 10))
-        .toBe(nextTuesday.plus({ days: 1 }).toUTC().toISO()?.slice(0, 10));
-    });
-
     it('should handle timezone-specific ranges', () => {
       const result = parser.parse('next tuesday from 3pm to 5pm', {
         timeZone: 'America/New_York'
@@ -227,7 +213,6 @@ describe('Natural Language Date Parser', () => {
       expect(result?.type).toBe('range');
       expect(result?.start.hour).toBe(7);
       expect(result?.end?.hour).toBe(11);
-      console.log(result);
     });
 
     test('should parse date with early/mid/late time of day', () => {

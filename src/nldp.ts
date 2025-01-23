@@ -63,6 +63,11 @@ function componentToResult(component: ParseComponent | null): ParseResult | null
 }
 
 export const createNLDP = (preferences: DateParsePreferences = {}): NLDP => {
+  // If useLocalTimezone is true, set the timeZone to the system's local timezone
+  if (preferences.useLocalTimezone) {
+    preferences.timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }
+  
   let state = createParserState(preferences);
   
   // Register default rules
@@ -71,8 +76,13 @@ export const createNLDP = (preferences: DateParsePreferences = {}): NLDP => {
   });
 
   return {
-    parse: (input: string, parsePreferences: DateParsePreferences = {}) => 
-      componentToResult(parse(state, input, parsePreferences)),
+    parse: (input: string, parsePreferences: DateParsePreferences = {}) => {
+      // Also handle useLocalTimezone in parse calls
+      if (parsePreferences.useLocalTimezone) {
+        parsePreferences.timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      }
+      return componentToResult(parse(state, input, parsePreferences));
+    },
     
     registerRule: (rule: RuleModule) => {
       state = registerRule(state, rule);

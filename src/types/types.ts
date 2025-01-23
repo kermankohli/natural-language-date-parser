@@ -40,6 +40,7 @@ export interface TimeOfDayPreferences {
 export interface DateParsePreferences {
   referenceDate?: DateTime;        // Date to use as "now" for relative dates
   timeZone?: string;           // IANA time zone identifier
+  useLocalTimezone?: boolean;  // If true, use the system's local timezone
   weekStartsOn?: number;        // 0 = Sunday, 1 = Monday
   timeOfDay?: TimeOfDayPreferences;
   parser?: {
