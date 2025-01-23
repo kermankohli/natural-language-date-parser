@@ -30,7 +30,7 @@ describe('Partial Month Rule', () => {
       expect(value.start.toISO()).toBe('2024-03-01T00:00:00.000Z');
       expect(value.end.toISO()).toBe('2024-03-10T23:59:59.999Z');
       
-      expect(result?.metadata?.isPartialMonth).toBe(true);
+      expect(result?.metadata?.rangeType).toBe('partialMonth');
       expect(result?.metadata?.originalText).toBe('early march');
     }
   });
@@ -53,7 +53,7 @@ describe('Partial Month Rule', () => {
       expect(value.start.toISO()).toBe('2024-03-11T00:00:00.000Z');
       expect(value.end.toISO()).toBe('2024-03-20T23:59:59.999Z');
       
-      expect(result?.metadata?.isPartialMonth).toBe(true);
+      expect(result?.metadata?.rangeType).toBe('partialMonth');
       expect(result?.metadata?.originalText).toBe('mid march');
     }
   });
@@ -76,7 +76,7 @@ describe('Partial Month Rule', () => {
       expect(value.start.toISO()).toBe('2024-03-21T00:00:00.000Z');
       expect(value.end.toISO()).toBe('2024-03-31T23:59:59.999Z');
       
-      expect(result?.metadata?.isPartialMonth).toBe(true);
+      expect(result?.metadata?.rangeType).toBe('partialMonth');
       expect(result?.metadata?.originalText).toBe('late march');
     }
   });

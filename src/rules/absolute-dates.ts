@@ -8,24 +8,16 @@ function createDateComponent(
   date: DateTime,
   span: { start: number; end: number },
   originalText: string,
-  preferences: DateParsePreferences,
-  isAbsolute: boolean = true
+  preferences: DateParsePreferences
 ): ParseComponent {
-  // If timezone is specified, convert to that timezone
-  // If no timezone is specified, use UTC
-  const targetZone = preferences.timeZone || 'UTC';
-  
-  // Convert to target timezone preserving the absolute time
-  let result = date.setZone(targetZone);
-  
   return {
     type: 'date',
     span,
-    value: result,
+    value: date,
     confidence: 1,
     metadata: {
-      isAbsolute,
-      originalText
+      originalText,
+      dateType: 'absolute'
     }
   };
 }

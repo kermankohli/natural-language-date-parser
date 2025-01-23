@@ -7,8 +7,7 @@ function createWeekComponent(
   end: DateTime,
   span: { start: number; end: number },
   originalText: string,
-  preferences: DateParsePreferences,
-  isRelative: boolean = true
+  preferences: DateParsePreferences
 ): ParseComponent {
   // If timezone is specified, convert to that timezone
   // If no timezone is specified, use UTC
@@ -27,8 +26,9 @@ function createWeekComponent(
     },
     confidence: 1,
     metadata: {
-      isRelative,
-      originalText
+      originalText,
+      dateType: 'relative',
+      rangeType: 'relativeWeek'
     }
   };
 }
@@ -74,6 +74,44 @@ function getLastWeekRange(date: DateTime, weekStartsOn: number = 0): { start: Da
   // Last week starts 7 days before current week start
   const lastWeekStart = currentWeek.start.minus({ days: 7 });
   return getWeekRange(lastWeekStart, weekStartsOn);
+}
+
+function createDateComponent(
+  date: DateTime,
+  span: { start: number; end: number },
+  originalText: string,
+  preferences: DateParsePreferences
+): ParseComponent {
+  return {
+    type: 'date',
+    span,
+    value: date,
+    confidence: 1,
+    metadata: {
+      originalText,
+      dateType: 'relative'
+    }
+  };
+}
+
+function createRangeComponent(
+  start: DateTime,
+  end: DateTime,
+  span: { start: number; end: number },
+  originalText: string,
+  preferences: DateParsePreferences
+): ParseComponent {
+  return {
+    type: 'range',
+    span,
+    value: { start, end },
+    confidence: 1,
+    metadata: {
+      originalText,
+      dateType: 'relative',
+      rangeType: 'relativeWeek'
+    }
+  };
 }
 
 const patterns: Pattern[] = [

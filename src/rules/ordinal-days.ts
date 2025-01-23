@@ -25,33 +25,37 @@ const MONTHS_ARRAY = [
   'december', 'dec'
 ];
 
-function createDateComponent(
+const createOrdinalDayComponent = (
   date: DateTime,
   span: { start: number; end: number },
   originalText: string,
   preferences: DateParsePreferences
-): ParseComponent {
+): ParseComponent => {
+  // Ensure we're using the reference year if available
+  const referenceYear = preferences.referenceDate?.year || DateTime.now().year;
+  const dateWithCorrectYear = date.set({ year: referenceYear });
+
   return {
     type: 'date',
-    value: date,
     span,
-    confidence: 1.0,
+    value: dateWithCorrectYear,
+    confidence: 1,
     metadata: {
-      isOrdinal: true,
-      originalText
+      originalText,
+      dateType: 'ordinal'
     }
   };
-}
+};
 
 export const ordinalDaysRule: RuleModule = {
   name: 'ordinal-days',
   patterns: [
     {
       // Pattern for "1st of March", "first of March", etc.
-      regex: /^(?:the\s+)?(?:(\d+)(?:st|nd|rd|th)|first|second|third|fourth|fifth|last|second\s+to\s+last|third\s+to\s+last)\s+(?:day\s+)?(?:of\s+)?(?:the\s+)?(?:month\s+(?:of\s+)?)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)$/i,
+      regex: /^(?:the\s+)?(?:(\d+)(?:st|nd|rd|th)|first|second|third|fourth|fifth|last|second\s+to\s+last|third\s+to\s+last)\s+(?:day\s+)?(?:of\s+)?(?:the\s+)?(?:month\s+(?:of\s+)?)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)(?:\s+(\d{4}))?$/i,
       parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
         Logger.debug('Parsing ordinal day', { matches });
-        const [fullMatch, ordinalOrNumber, month] = matches;
+        const [fullMatch, ordinalOrNumber, month, year] = matches;
         
         let dayNum: number;
         if (ordinalOrNumber) {
@@ -66,7 +70,7 @@ export const ordinalDaysRule: RuleModule = {
         const monthNum = Math.floor(MONTHS_ARRAY.indexOf(month.toLowerCase()) / 2) + 1;
         if (monthNum < 1 || monthNum > 12) return null;
 
-        const referenceYear = preferences.referenceDate?.year || new Date().getUTCFullYear();
+        const referenceYear = year ? parseInt(year, 10) : preferences.referenceDate?.year || DateTime.now().year;
         
         // Create the date in the specified timezone
         const result = preferences.timeZone
@@ -81,15 +85,15 @@ export const ordinalDaysRule: RuleModule = {
           return null;
         }
 
-        return createDateComponent(result, { start: 0, end: fullMatch.length }, fullMatch, preferences);
+        return createOrdinalDayComponent(result, { start: 0, end: fullMatch.length }, fullMatch, preferences);
       }
     },
     {
       // Pattern for "March 1st", "March first", etc.
-      regex: /^(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+(?:the\s+)?(?:(\d+)(?:st|nd|rd|th)?|first|second|third|fourth|fifth|last|second\s+to\s+last|third\s+to\s+last)$/i,
+      regex: /^(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+(?:the\s+)?(?:(\d+)(?:st|nd|rd|th)?|first|second|third|fourth|fifth|last|second\s+to\s+last|third\s+to\s+last)(?:\s+(\d{4}))?$/i,
       parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
         Logger.debug('Parsing month first ordinal day', { matches });
-        const [fullMatch, month, dayNumber] = matches;
+        const [fullMatch, month, dayNumber, year] = matches;
         
         let dayNum: number;
         if (dayNumber) {
@@ -104,7 +108,7 @@ export const ordinalDaysRule: RuleModule = {
         const monthNum = Math.floor(MONTHS_ARRAY.indexOf(month.toLowerCase()) / 2) + 1;
         if (monthNum < 1 || monthNum > 12) return null;
 
-        const referenceYear = preferences.referenceDate?.year || new Date().getUTCFullYear();
+        const referenceYear = year ? parseInt(year, 10) : preferences.referenceDate?.year || DateTime.now().year;
         
         // Create the date in the specified timezone
         const result = preferences.timeZone
@@ -119,7 +123,7 @@ export const ordinalDaysRule: RuleModule = {
           return null;
         }
 
-        return createDateComponent(result, { start: 0, end: fullMatch.length }, fullMatch, preferences);
+        return createOrdinalDayComponent(result, { start: 0, end: fullMatch.length }, fullMatch, preferences);
       }
     }
   ],
@@ -170,7 +174,7 @@ export const ordinalDaysRule: RuleModule = {
     // Create the date
     const result = DateTime.utc(targetYear, monthNum - 1, dayNum);
 
-    return createDateComponent(result, { start: 0, end: intermediate.text?.length || 0 }, intermediate.text || '', prefs);
+    return createOrdinalDayComponent(result, { start: 0, end: intermediate.text?.length || 0 }, intermediate.text || '', prefs);
   }
 } as RuleModule;
 
@@ -190,5 +194,5 @@ export function parseOrdinalDay(matches: RegExpExecArray, preferences: DateParse
     return null;
   }
 
-  return createDateComponent(start, { start: 0, end: fullMatch.length }, fullMatch, preferences);
+  return createOrdinalDayComponent(start, { start: 0, end: fullMatch.length }, fullMatch, preferences);
 } 

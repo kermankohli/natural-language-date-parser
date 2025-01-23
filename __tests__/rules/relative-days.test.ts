@@ -2,6 +2,7 @@ import { DateTime } from 'luxon';
 import { createParserState, registerRule } from '../../src/parser/parser-engine';
 import { relativeDaysRule } from '../../src/rules/relative-days';
 import { Pattern } from '../../src/types/types';
+import { DateParsePreferences } from '../../src/types/types';
 
 // Helper to find pattern by example input
 function findPatternForInput(input: string): Pattern | undefined {
@@ -10,6 +11,73 @@ function findPatternForInput(input: string): Pattern | undefined {
 
 describe('Relative Days Rule', () => {
   const referenceDate = DateTime.fromISO('2024-03-14T12:00:00Z');
+  const preferences: DateParsePreferences = { referenceDate };
+
+  test('basic relative day parsing', () => {
+    const input = 'today';
+    const pattern = findPatternForInput(input);
+    expect(pattern).toBeDefined();
+
+    const matches = pattern?.regex.exec(input);
+    expect(matches).not.toBeNull();
+
+    if (matches && pattern) {
+      const result = pattern.parse(matches, preferences);
+      expect(result).not.toBeNull();
+      expect(result?.type).toBe('date');
+      expect(result?.span).toEqual({ start: 0, end: 5 });
+      expect(result?.metadata?.dateType).toBe('relative');
+      
+      const value = result?.value as DateTime;
+      expect(value.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-14');
+      
+      expect(result?.metadata?.originalText).toBe('today');
+    }
+  });
+
+  test('tomorrow', () => {
+    const input = 'tomorrow';
+    const pattern = findPatternForInput(input);
+    expect(pattern).toBeDefined();
+
+    const matches = pattern?.regex.exec(input);
+    expect(matches).not.toBeNull();
+
+    if (matches && pattern) {
+      const result = pattern.parse(matches, preferences);
+      expect(result).not.toBeNull();
+      expect(result?.type).toBe('date');
+      expect(result?.span).toEqual({ start: 0, end: 8 });
+      expect(result?.metadata?.dateType).toBe('relative');
+      
+      const value = result?.value as DateTime;
+      expect(value.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-15');
+      
+      expect(result?.metadata?.originalText).toBe('tomorrow');
+    }
+  });
+
+  test('yesterday', () => {
+    const input = 'yesterday';
+    const pattern = findPatternForInput(input);
+    expect(pattern).toBeDefined();
+
+    const matches = pattern?.regex.exec(input);
+    expect(matches).not.toBeNull();
+
+    if (matches && pattern) {
+      const result = pattern.parse(matches, preferences);
+      expect(result).not.toBeNull();
+      expect(result?.type).toBe('date');
+      expect(result?.span).toEqual({ start: 0, end: 9 });
+      expect(result?.metadata?.dateType).toBe('relative');
+      
+      const value = result?.value as DateTime;
+      expect(value.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-13');
+      
+      expect(result?.metadata?.originalText).toBe('yesterday');
+    }
+  });
 
   test('basic relative days', () => {
     const todayInput = 'today';
@@ -25,7 +93,7 @@ describe('Relative Days Rule', () => {
       expect(result?.type).toBe('date');
       expect(result?.span).toEqual({ start: 0, end: 5 });
       expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe('2024-03-14');
-      expect(result?.metadata?.isRelative).toBe(true);
+      expect(result?.metadata?.dateType).toBe('relative');
       expect(result?.metadata?.originalText).toBe('today');
     }
 
@@ -37,7 +105,7 @@ describe('Relative Days Rule', () => {
       expect(result?.type).toBe('date');
       expect(result?.span).toEqual({ start: 0, end: 8 });
       expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe('2024-03-15');
-      expect(result?.metadata?.isRelative).toBe(true);
+      expect(result?.metadata?.dateType).toBe('relative');
       expect(result?.metadata?.originalText).toBe('tomorrow');
     }
 
@@ -49,33 +117,51 @@ describe('Relative Days Rule', () => {
       expect(result?.type).toBe('date');
       expect(result?.span).toEqual({ start: 0, end: 9 });
       expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe('2024-03-13');
-      expect(result?.metadata?.isRelative).toBe(true);
+      expect(result?.metadata?.dateType).toBe('relative');
       expect(result?.metadata?.originalText).toBe('yesterday');
     }
   });
 
-  test('days ago/from now', () => {
-    const agoInput = '3 days ago';
-    const agoPattern = findPatternForInput(agoInput);
-    const agoMatches = agoPattern?.regex.exec(agoInput);
-    if (agoMatches && agoPattern) {
-      const result = agoPattern.parse(agoMatches, { referenceDate });
+  test('relative days with offsets', () => {
+    const input = '3 days ago';
+    const pattern = findPatternForInput(input);
+    expect(pattern).toBeDefined();
+
+    const matches = pattern?.regex.exec(input);
+    expect(matches).not.toBeNull();
+
+    if (matches && pattern) {
+      const result = pattern.parse(matches, preferences);
+      expect(result).not.toBeNull();
       expect(result?.type).toBe('date');
       expect(result?.span).toEqual({ start: 0, end: 10 });
-      expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe('2024-03-11');
-      expect(result?.metadata?.isRelative).toBe(true);
+      expect(result?.metadata?.dateType).toBe('relative');
+      
+      const value = result?.value as DateTime;
+      expect(value.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-11');
+      
       expect(result?.metadata?.originalText).toBe('3 days ago');
     }
+  });
 
-    const fromNowInput = '3 days from now';
-    const fromNowPattern = findPatternForInput(fromNowInput);
-    const fromNowMatches = fromNowPattern?.regex.exec(fromNowInput);
-    if (fromNowMatches && fromNowPattern) {
-      const result = fromNowPattern.parse(fromNowMatches, { referenceDate });
+  test('relative days in future', () => {
+    const input = '3 days from now';
+    const pattern = findPatternForInput(input);
+    expect(pattern).toBeDefined();
+
+    const matches = pattern?.regex.exec(input);
+    expect(matches).not.toBeNull();
+
+    if (matches && pattern) {
+      const result = pattern.parse(matches, preferences);
+      expect(result).not.toBeNull();
       expect(result?.type).toBe('date');
       expect(result?.span).toEqual({ start: 0, end: 15 });
-      expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe('2024-03-17');
-      expect(result?.metadata?.isRelative).toBe(true);
+      expect(result?.metadata?.dateType).toBe('relative');
+      
+      const value = result?.value as DateTime;
+      expect(value.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-17');
+      
       expect(result?.metadata?.originalText).toBe('3 days from now');
     }
   });
@@ -93,7 +179,7 @@ describe('Relative Days Rule', () => {
       expect(result?.type).toBe('date');
       expect(result?.span).toEqual({ start: 0, end: 5 });
       expect((result?.value as DateTime).toUTC().toISO()).toBe('2024-03-14T12:00:00.000Z');
-      expect(result?.metadata?.isRelative).toBe(true);
+      expect(result?.metadata?.dateType).toBe('relative');
       expect(result?.metadata?.originalText).toBe('today');
     }
   });
@@ -108,7 +194,7 @@ describe('Relative Days Rule', () => {
       expect(result?.type).toBe('date');
       expect(result?.span).toEqual({ start: 0, end: 15 });
       expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe('2024-03-15');
-      expect(result?.metadata?.isRelative).toBe(true);
+      expect(result?.metadata?.dateType).toBe('relative');
       expect(result?.metadata?.originalText).toBe('upcoming friday');
     }
 
@@ -121,7 +207,7 @@ describe('Relative Days Rule', () => {
       expect(result?.type).toBe('date');
       expect(result?.span).toEqual({ start: 0, end: 18 });
       expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe('2024-03-20');
-      expect(result?.metadata?.isRelative).toBe(true);
+      expect(result?.metadata?.dateType).toBe('relative');
       expect(result?.metadata?.originalText).toBe('upcoming wednesday');
     }
 
@@ -134,7 +220,7 @@ describe('Relative Days Rule', () => {
       expect(result?.type).toBe('date');
       expect(result?.span).toEqual({ start: 0, end: 11 });
       expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe('2024-03-22');
-      expect(result?.metadata?.isRelative).toBe(true);
+      expect(result?.metadata?.dateType).toBe('relative');
       expect(result?.metadata?.originalText).toBe('next friday');
     }
 
@@ -148,7 +234,7 @@ describe('Relative Days Rule', () => {
       expect(result?.type).toBe('date');
       expect(result?.span).toEqual({ start: 0, end: 16 });
       expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe('2024-03-12');
-      expect(result?.metadata?.isRelative).toBe(true);
+      expect(result?.metadata?.dateType).toBe('relative');
       expect(result?.metadata?.originalText).toBe('upcoming tuesday');
     }
   });

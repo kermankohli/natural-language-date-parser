@@ -21,17 +21,17 @@ describe('Ordinal Weeks Rule', () => {
     expect(matches).not.toBeNull();
 
     if (matches && pattern) {
-      const result = pattern.parse(matches, preferences);
+      const result = pattern.parse(matches, { referenceDate });
       expect(result).not.toBeNull();
       expect(result?.type).toBe('range');
-      expect(result?.span).toEqual({ start: 0, end: 19 });
+      expect(result?.span).toEqual({ start: 0, end: input.length });
+      expect(result?.metadata?.rangeType).toBe('ordinalWeek');
       
       const value = result?.value as { start: DateTime; end: DateTime };
       expect(value.start.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-04');
       expect(value.end.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-10');
       
-      expect(result?.metadata?.isOrdinalWeek).toBe(true);
-      expect(result?.metadata?.originalText).toBe('first week of March');
+      expect(result?.metadata?.originalText).toBe(input);
     }
   });
 
@@ -44,17 +44,17 @@ describe('Ordinal Weeks Rule', () => {
     expect(matches).not.toBeNull();
 
     if (matches && pattern) {
-      const result = pattern.parse(matches, preferences);
+      const result = pattern.parse(matches, { referenceDate });
       expect(result).not.toBeNull();
       expect(result?.type).toBe('range');
-      expect(result?.span).toEqual({ start: 0, end: 18 });
+      expect(result?.span).toEqual({ start: 0, end: input.length });
+      expect(result?.metadata?.rangeType).toBe('ordinalWeek');
       
       const value = result?.value as { start: DateTime; end: DateTime };
       expect(value.start.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-25');
       expect(value.end.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-31');
       
-      expect(result?.metadata?.isOrdinalWeek).toBe(true);
-      expect(result?.metadata?.originalText).toBe('last week of March');
+      expect(result?.metadata?.originalText).toBe(input);
     }
   });
 
@@ -74,15 +74,15 @@ describe('Ordinal Weeks Rule', () => {
       expect(matches).not.toBeNull();
 
       if (matches && pattern) {
-        const result = pattern.parse(matches, preferences);
+        const result = pattern.parse(matches, { referenceDate });
         expect(result).not.toBeNull();
         expect(result?.type).toBe('range');
         expect(result?.span).toEqual({ start: 0, end: length });
+        expect(result?.metadata?.rangeType).toBe('ordinalWeek');
         
         const value = result?.value as { start: DateTime; end: DateTime };
         expect(value.start.toUTC().toISO()?.slice(0, 10)).toBe(expected);
         
-        expect(result?.metadata?.isOrdinalWeek).toBe(true);
         expect(result?.metadata?.originalText).toBe(input);
       }
     }
@@ -102,13 +102,13 @@ describe('Ordinal Weeks Rule', () => {
       const mondayResult = pattern.parse(matches, mondayPrefs);
       expect(mondayResult).not.toBeNull();
       expect(mondayResult?.type).toBe('range');
-      expect(mondayResult?.span).toEqual({ start: 0, end: 19 });
+      expect(mondayResult?.span).toEqual({ start: 0, end: input.length });
+      expect(mondayResult?.metadata?.rangeType).toBe('ordinalWeek');
       
       const mondayValue = mondayResult?.value as { start: DateTime; end: DateTime };
       expect(mondayValue.start.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-04');
       expect(mondayValue.end.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-10');
       
-      expect(mondayResult?.metadata?.isOrdinalWeek).toBe(true);
       expect(mondayResult?.metadata?.originalText).toBe(input);
 
       // Test with Sunday start
@@ -116,13 +116,13 @@ describe('Ordinal Weeks Rule', () => {
       const sundayResult = pattern.parse(matches, sundayPrefs);
       expect(sundayResult).not.toBeNull();
       expect(sundayResult?.type).toBe('range');
-      expect(sundayResult?.span).toEqual({ start: 0, end: 19 });
+      expect(sundayResult?.span).toEqual({ start: 0, end: input.length });
+      expect(sundayResult?.metadata?.rangeType).toBe('ordinalWeek');
       
       const sundayValue = sundayResult?.value as { start: DateTime; end: DateTime };
       expect(sundayValue.start.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-03');
       expect(sundayValue.end.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-09');
       
-      expect(sundayResult?.metadata?.isOrdinalWeek).toBe(true);
       expect(sundayResult?.metadata?.originalText).toBe(input);
     }
   });

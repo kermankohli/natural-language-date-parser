@@ -23,8 +23,8 @@ function createDateComponent(
     value: result,
     confidence: 1,
     metadata: {
-      isRelative,
-      originalText
+      originalText,
+      dateType: isRelative ? 'relative' : 'absolute'
     }
   };
 }

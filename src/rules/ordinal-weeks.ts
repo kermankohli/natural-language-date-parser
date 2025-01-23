@@ -76,10 +76,11 @@ function createOrdinalWeekComponent(
     type: 'range',
     span,
     value: { start, end },
-    confidence: 1.0,
+    confidence: 1,
     metadata: {
-      isOrdinalWeek: true,
-      originalText
+      originalText,
+      dateType: 'ordinal',
+      rangeType: 'ordinalWeek'
     }
   };
 }

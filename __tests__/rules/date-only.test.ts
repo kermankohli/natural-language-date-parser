@@ -24,7 +24,7 @@ describe('Date Only Rule', () => {
     expect(result).toBeTruthy();
     expect(result!.type).toBe('date');
     expect(result!.span).toEqual({ start: 0, end: input.length });
-    expect(result!.metadata?.isAbsolute).toBe(true);
+    expect(result!.metadata?.dateType).toBe('absolute');
     expect(result!.metadata?.originalText).toBe(input);
     expect((result!.value as DateTime).toISO()?.slice(0, 10)).toBe('2024-03-20');
 
@@ -36,7 +36,7 @@ describe('Date Only Rule', () => {
     expect(result2).toBeTruthy();
     expect(result2!.type).toBe('date');
     expect(result2!.span).toEqual({ start: 0, end: input2.length });
-    expect(result2!.metadata?.isAbsolute).toBe(true);
+    expect(result2!.metadata?.dateType).toBe('absolute');
     expect(result2!.metadata?.originalText).toBe(input2);
     expect((result2!.value as DateTime).toISO()?.slice(0, 10)).toBe('2024-12-31');
 
@@ -48,7 +48,7 @@ describe('Date Only Rule', () => {
     expect(result3).toBeTruthy();
     expect(result3!.type).toBe('date');
     expect(result3!.span).toEqual({ start: 0, end: input3.length });
-    expect(result3!.metadata?.isAbsolute).toBe(true);
+    expect(result3!.metadata?.dateType).toBe('absolute');
     expect(result3!.metadata?.originalText).toBe(input3);
     expect((result3!.value as DateTime).toISO()?.slice(0, 10)).toBe('2025-01-01');
   });
@@ -62,7 +62,7 @@ describe('Date Only Rule', () => {
     expect(result).toBeTruthy();
     expect(result!.type).toBe('date');
     expect(result!.span).toEqual({ start: 0, end: input.length });
-    expect(result!.metadata?.isAbsolute).toBe(true);
+    expect(result!.metadata?.dateType).toBe('absolute');
     expect(result!.metadata?.originalText).toBe(input);
     expect((result!.value as DateTime).toUTC().toISO()).toBe('2024-03-20T04:00:00.000Z');
   });

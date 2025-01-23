@@ -17,8 +17,8 @@ function createDateComponent(
     span,
     confidence: 1.0,
     metadata: {
-      isAbsolute: true,
-      originalText
+      originalText,
+      dateType: 'absolute'
     }
   };
 }

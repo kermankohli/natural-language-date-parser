@@ -24,7 +24,7 @@ describe('Fuzzy Ranges Rule', () => {
     expect(yearResult).toBeTruthy();
     expect(yearResult!.type).toBe('range');
     expect(yearResult!.span).toEqual({ start: 0, end: yearInput.length });
-    expect(yearResult!.metadata?.isFuzzyRange).toBe(true);
+    expect(yearResult!.metadata?.rangeType).toBe('fuzzy');
     expect(yearResult!.metadata?.originalText).toBe(yearInput);
     expect((yearResult!.value as any).start.toUTC().toISO()?.slice(0, 10)).toBe('2024-01-01');
     expect((yearResult!.value as any).end.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-31');
@@ -37,7 +37,7 @@ describe('Fuzzy Ranges Rule', () => {
     expect(monthResult).toBeTruthy();
     expect(monthResult!.type).toBe('range');
     expect(monthResult!.span).toEqual({ start: 0, end: monthInput.length });
-    expect(monthResult!.metadata?.isFuzzyRange).toBe(true);
+    expect(monthResult!.metadata?.rangeType).toBe('fuzzy');
     expect(monthResult!.metadata?.originalText).toBe(monthInput);
     expect((monthResult!.value as any).start.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-01');
     expect((monthResult!.value as any).end.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-10');
@@ -52,7 +52,7 @@ describe('Fuzzy Ranges Rule', () => {
     expect(yearResult).toBeTruthy();
     expect(yearResult!.type).toBe('range');
     expect(yearResult!.span).toEqual({ start: 0, end: yearInput.length });
-    expect(yearResult!.metadata?.isFuzzyRange).toBe(true);
+    expect(yearResult!.metadata?.rangeType).toBe('fuzzy');
     expect(yearResult!.metadata?.originalText).toBe(yearInput);
     expect((yearResult!.value as any).start.toUTC().toISO()?.slice(0, 10)).toBe('2024-05-01');
     expect((yearResult!.value as any).end.toUTC().toISO()?.slice(0, 10)).toBe('2024-08-31');
@@ -65,7 +65,7 @@ describe('Fuzzy Ranges Rule', () => {
     expect(monthResult).toBeTruthy();
     expect(monthResult!.type).toBe('range');
     expect(monthResult!.span).toEqual({ start: 0, end: monthInput.length });
-    expect(monthResult!.metadata?.isFuzzyRange).toBe(true);
+    expect(monthResult!.metadata?.rangeType).toBe('fuzzy');
     expect(monthResult!.metadata?.originalText).toBe(monthInput);
     expect((monthResult!.value as any).start.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-11');
     expect((monthResult!.value as any).end.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-20');
@@ -80,7 +80,7 @@ describe('Fuzzy Ranges Rule', () => {
     expect(yearResult).toBeTruthy();
     expect(yearResult!.type).toBe('range');
     expect(yearResult!.span).toEqual({ start: 0, end: yearInput.length });
-    expect(yearResult!.metadata?.isFuzzyRange).toBe(true);
+    expect(yearResult!.metadata?.rangeType).toBe('fuzzy');
     expect(yearResult!.metadata?.originalText).toBe(yearInput);
     expect((yearResult!.value as any).start.toUTC().toISO()?.slice(0, 10)).toBe('2024-09-01');
     expect((yearResult!.value as any).end.toUTC().toISO()?.slice(0, 10)).toBe('2024-12-31');
@@ -93,7 +93,7 @@ describe('Fuzzy Ranges Rule', () => {
     expect(monthResult).toBeTruthy();
     expect(monthResult!.type).toBe('range');
     expect(monthResult!.span).toEqual({ start: 0, end: monthInput.length });
-    expect(monthResult!.metadata?.isFuzzyRange).toBe(true);
+    expect(monthResult!.metadata?.rangeType).toBe('fuzzy');
     expect(monthResult!.metadata?.originalText).toBe(monthInput);
     expect((monthResult!.value as any).start.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-21');
     expect((monthResult!.value as any).end.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-31');
@@ -115,7 +115,7 @@ describe('Fuzzy Ranges Rule', () => {
       expect(result).toBeTruthy();
       expect(result!.type).toBe('range');
       expect(result!.span).toEqual({ start: 0, end: input.length });
-      expect(result!.metadata?.isFuzzyRange).toBe(true);
+      expect(result!.metadata?.rangeType).toBe('fuzzy');
       expect(result!.metadata?.originalText).toBe(input);
       expect((result!.value as any).start.toUTC().toISO()?.slice(0, 10)).toBe('2024-01-01');
       expect((result!.value as any).end.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-31');
@@ -136,7 +136,7 @@ describe('Fuzzy Ranges Rule', () => {
       expect(result).toBeTruthy();
       expect(result!.type).toBe('range');
       expect(result!.span).toEqual({ start: 0, end: input.length });
-      expect(result!.metadata?.isFuzzyRange).toBe(true);
+      expect(result!.metadata?.rangeType).toBe('fuzzy');
       expect(result!.metadata?.originalText).toBe(input);
       expect((result!.value as any).start.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-11');
       expect((result!.value as any).end.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-20');
@@ -153,7 +153,7 @@ describe('Fuzzy Ranges Rule', () => {
       expect(result).toBeTruthy();
       expect(result!.type).toBe('range');
       expect(result!.span).toEqual({ start: 0, end: input.length });
-      expect(result!.metadata?.isFuzzyRange).toBe(true);
+      expect(result!.metadata?.rangeType).toBe('fuzzy');
       expect(result!.metadata?.originalText).toBe(input);
       expect((result!.value as any).start.toISO()?.slice(0, 10)).toBe('2024-03-16');
       expect((result!.value as any).end.toISO()?.slice(0, 10)).toBe('2024-03-17');
@@ -168,7 +168,7 @@ describe('Fuzzy Ranges Rule', () => {
       expect(result).toBeTruthy();
       expect(result!.type).toBe('range');
       expect(result!.span).toEqual({ start: 0, end: input.length });
-      expect(result!.metadata?.isFuzzyRange).toBe(true);
+      expect(result!.metadata?.rangeType).toBe('fuzzy');
       expect(result!.metadata?.originalText).toBe(input);
       expect((result!.value as any).start.toISO()?.slice(0, 10)).toBe('2024-03-23');
       expect((result!.value as any).end.toISO()?.slice(0, 10)).toBe('2024-03-24');
@@ -183,7 +183,7 @@ describe('Fuzzy Ranges Rule', () => {
       expect(result).toBeTruthy();
       expect(result!.type).toBe('range');
       expect(result!.span).toEqual({ start: 0, end: input.length });
-      expect(result!.metadata?.isFuzzyRange).toBe(true);
+      expect(result!.metadata?.rangeType).toBe('fuzzy');
       expect(result!.metadata?.originalText).toBe(input);
       expect((result!.value as any).start.toISO()).toBe('2024-03-16T00:00:00.000+08:00');
       expect((result!.value as any).end.toISO()).toBe('2024-03-17T23:59:59.999+08:00');
@@ -196,7 +196,7 @@ describe('Fuzzy Ranges Rule', () => {
       expect(nextResult).toBeTruthy();
       expect(nextResult!.type).toBe('range');
       expect(nextResult!.span).toEqual({ start: 0, end: nextInput.length });
-      expect(nextResult!.metadata?.isFuzzyRange).toBe(true);
+      expect(nextResult!.metadata?.rangeType).toBe('fuzzy');
       expect(nextResult!.metadata?.originalText).toBe(nextInput);
       expect((nextResult!.value as any).start.toISO()).toBe('2024-03-23T00:00:00.000+08:00');
       expect((nextResult!.value as any).end.toISO()).toBe('2024-03-24T23:59:59.999+08:00');

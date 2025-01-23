@@ -25,7 +25,7 @@ describe('Ordinal Days Rule', () => {
       expect(result?.type).toBe('date');
       expect(result?.span).toEqual({ start: 0, end: firstInput.length });
       expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe('2023-03-01');
-      expect(result?.metadata?.isOrdinal).toBe(true);
+      expect(result?.metadata?.dateType).toBe('ordinal');
       expect(result?.metadata?.originalText).toBe(firstInput);
     }
 
@@ -37,7 +37,7 @@ describe('Ordinal Days Rule', () => {
       expect(result?.type).toBe('date');
       expect(result?.span).toEqual({ start: 0, end: fifteenthInput.length });
       expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe('2023-03-15');
-      expect(result?.metadata?.isOrdinal).toBe(true);
+      expect(result?.metadata?.dateType).toBe('ordinal');
       expect(result?.metadata?.originalText).toBe(fifteenthInput);
     }
 
@@ -49,7 +49,7 @@ describe('Ordinal Days Rule', () => {
       expect(result?.type).toBe('date');
       expect(result?.span).toEqual({ start: 0, end: twentyThirdInput.length });
       expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe('2023-03-23');
-      expect(result?.metadata?.isOrdinal).toBe(true);
+      expect(result?.metadata?.dateType).toBe('ordinal');
       expect(result?.metadata?.originalText).toBe(twentyThirdInput);
     }
 
@@ -61,7 +61,7 @@ describe('Ordinal Days Rule', () => {
       expect(result?.type).toBe('date');
       expect(result?.span).toEqual({ start: 0, end: thirtyFirstInput.length });
       expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe('2023-03-31');
-      expect(result?.metadata?.isOrdinal).toBe(true);
+      expect(result?.metadata?.dateType).toBe('ordinal');
       expect(result?.metadata?.originalText).toBe(thirtyFirstInput);
     }
   });
@@ -79,7 +79,7 @@ describe('Ordinal Days Rule', () => {
       expect(result?.type).toBe('date');
       expect(result?.span).toEqual({ start: 0, end: input.length });
       expect((result?.value as DateTime).toUTC().toISO()).toBe('2023-03-15T04:00:00.000Z');
-      expect(result?.metadata?.isOrdinal).toBe(true);
+      expect(result?.metadata?.dateType).toBe('ordinal');
       expect(result?.metadata?.originalText).toBe(input);
     }
   });
@@ -108,7 +108,7 @@ describe('Ordinal Days Rule', () => {
         expect(result?.type).toBe('date');
         expect(result?.span).toEqual({ start: 0, end: input.length });
         expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe(expected);
-        expect(result?.metadata?.isOrdinal).toBe(true);
+        expect(result?.metadata?.dateType).toBe('ordinal');
         expect(result?.metadata?.originalText).toBe(input);
       }
     }
@@ -128,9 +128,75 @@ describe('Ordinal Days Rule', () => {
         expect(result?.type).toBe('date');
         expect(result?.span).toEqual({ start: 0, end: input.length });
         expect((result?.value as DateTime).toUTC().toISO()?.slice(0, 10)).toBe(`2023-03-${day.toString().padStart(2, '0')}`);
-        expect(result?.metadata?.isOrdinal).toBe(true);
+        expect(result?.metadata?.dateType).toBe('ordinal');
         expect(result?.metadata?.originalText).toBe(input);
       }
+    }
+  });
+
+  test('basic ordinal day parsing', () => {
+    const input = '1st of March';
+    const pattern = findPatternForInput(input);
+    expect(pattern).toBeDefined();
+
+    const matches = pattern?.regex.exec(input);
+    expect(matches).not.toBeNull();
+
+    if (matches && pattern) {
+      const result = pattern.parse(matches, { referenceDate });
+      expect(result).not.toBeNull();
+      expect(result?.type).toBe('date');
+      expect(result?.span).toEqual({ start: 0, end: 12 });
+      expect(result?.metadata?.dateType).toBe('ordinal');
+      
+      const value = result?.value as DateTime;
+      expect(value.toUTC().toISO()?.slice(0, 10)).toBe('2023-03-01');
+      
+      expect(result?.metadata?.originalText).toBe('1st of March');
+    }
+  });
+
+  test('ordinal days with month', () => {
+    const input = '15th of March';
+    const pattern = findPatternForInput(input);
+    expect(pattern).toBeDefined();
+
+    const matches = pattern?.regex.exec(input);
+    expect(matches).not.toBeNull();
+
+    if (matches && pattern) {
+      const result = pattern.parse(matches, { referenceDate });
+      expect(result).not.toBeNull();
+      expect(result?.type).toBe('date');
+      expect(result?.span).toEqual({ start: 0, end: 13 });
+      expect(result?.metadata?.dateType).toBe('ordinal');
+      
+      const value = result?.value as DateTime;
+      expect(value.toUTC().toISO()?.slice(0, 10)).toBe('2023-03-15');
+      
+      expect(result?.metadata?.originalText).toBe('15th of March');
+    }
+  });
+
+  test('ordinal days with year', () => {
+    const input = '1st of March 2024';
+    const pattern = findPatternForInput(input);
+    expect(pattern).toBeDefined();
+
+    const matches = pattern?.regex.exec(input);
+    expect(matches).not.toBeNull();
+
+    if (matches && pattern) {
+      const result = pattern.parse(matches, { referenceDate });
+      expect(result).not.toBeNull();
+      expect(result?.type).toBe('date');
+      expect(result?.span).toEqual({ start: 0, end: 17 });
+      expect(result?.metadata?.dateType).toBe('ordinal');
+      
+      const value = result?.value as DateTime;
+      expect(value.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-01');
+      
+      expect(result?.metadata?.originalText).toBe('1st of March 2024');
     }
   });
 });

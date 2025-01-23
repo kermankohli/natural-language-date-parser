@@ -105,3 +105,13 @@ export interface IntermediateParse {
   captures?: { [key: string]: string };
   tokens?: string[];
 }
+
+export type DateType = 'absolute' | 'relative' | 'ordinal';
+export type RangeType = 'time' | 'timeOfDay' | 'partialMonth' | 'ordinalWeek' | 'fuzzy' | 'relativeWeek';
+
+export interface ParseMetadata {
+  originalText: string;
+  dateType?: DateType;
+  rangeType?: RangeType;
+  modifiers?: string[];
+}

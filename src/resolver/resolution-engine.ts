@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import { ParseResult } from '../types/types';
+import { ParseResult, DateType, RangeType, ParseMetadata } from '../types/types';
 import { ParseTrace } from '../utils/debug-trace';
 
 export type ComponentType = 'date' | 'time' | 'range' | 'modifier';
@@ -10,18 +10,7 @@ export interface ParseComponent {
   confidence: number;
   value: DateTime | { start: DateTime; end: DateTime };
   debugTrace?: ParseTrace;
-  metadata?: {
-    isRelative?: boolean;
-    isTimeOfDay?: boolean;
-    isOrdinal?: boolean;
-    isAbsolute?: boolean;
-    isTimeRange?: boolean;
-    isPartialMonth?: boolean;
-    isOrdinalWeek?: boolean;
-    isFuzzyRange?: boolean;
-    modifiers?: string[];
-    originalText: string;
-  }
+  metadata?: ParseMetadata;
 }
 
 /**
@@ -97,7 +86,15 @@ const combineDateAndTime = (date: DateTime, time: DateTime): DateTime => {
 export const resolveGroup = (components: ParseComponent[]): ParseComponent | null => {
   // Sort components by type priority: date > time > range > modifier
   const sortedByType = [...components].sort((a, b) => {
-    const priority = { date: 3, time: 2, range: 1, modifier: 0 };
+    const priority = { date: 4, time: 3, range: 2, modifier: 1 };
+    // If one component is a time and the other is a range with timeOfDay type,
+    // prioritize the specific time
+    if (a.type === 'time' && b.type === 'range' && b.metadata?.rangeType === 'timeOfDay') {
+      return -1;
+    }
+    if (b.type === 'time' && a.type === 'range' && a.metadata?.rangeType === 'timeOfDay') {
+      return 1;
+    }
     return priority[b.type] - priority[a.type];
   });
 
@@ -117,8 +114,18 @@ export const resolveGroup = (components: ParseComponent[]): ParseComponent | nul
         break;
       
       case 'range':
+        // Skip time-of-day ranges if we have a specific time
+        if (component.metadata?.rangeType === 'timeOfDay' && baseTime) {
+          continue;
+        }
         const range = component.value as { start: DateTime; end: DateTime };
         timeRange = range;
+        // If this is a time-of-day range, preserve the hours but use the base date
+        if (baseDate && component.metadata?.rangeType === 'timeOfDay') {
+          const start = combineDateAndTime(baseDate, range.start);
+          const end = combineDateAndTime(baseDate, range.end);
+          timeRange = { start, end };
+        }
         break;
     }
   }
@@ -141,7 +148,8 @@ export const resolveGroup = (components: ParseComponent[]): ParseComponent | nul
         span,
         confidence: components.reduce((acc, c) => acc * c.confidence, 1),
         metadata: {
-          originalText: components.map(c => c.metadata?.originalText).join(' ')
+          originalText: components.map(c => c.metadata?.originalText).join(' '),
+          ...components.reduce((acc, c) => ({ ...acc, ...c.metadata }), {})
         }
       };
     }
@@ -152,7 +160,8 @@ export const resolveGroup = (components: ParseComponent[]): ParseComponent | nul
       span,
       confidence: components.reduce((acc, c) => acc * c.confidence, 1),
       metadata: {
-        originalText: components.map(c => c.metadata?.originalText).join(' ')
+        originalText: components.map(c => c.metadata?.originalText).join(' '),
+        ...components.reduce((acc, c) => ({ ...acc, ...c.metadata }), {})
       }
     };
   }
@@ -160,26 +169,62 @@ export const resolveGroup = (components: ParseComponent[]): ParseComponent | nul
   // If we have both date and time
   if (baseDate && baseTime) {
     const datetime = combineDateAndTime(baseDate, baseTime);
+    // Only consider range types that weren't skipped
+    const hasRangeType = components.some(c => 
+      c.type === 'range' && 
+      !(c.metadata?.rangeType === 'timeOfDay' && baseTime)
+    );
+    
+    if (hasRangeType) {
+      const rangeComponent = components.find(c => 
+        c.type === 'range' && 
+        !(c.metadata?.rangeType === 'timeOfDay' && baseTime)
+      );
+      
+      if (rangeComponent?.value && 'start' in rangeComponent.value) {
+        const range = rangeComponent.value;
+        const start = combineDateAndTime(baseDate, range.start);
+        const end = combineDateAndTime(baseDate, range.end);
+        return {
+          type: 'range',
+          value: { start, end },
+          span,
+          confidence: components.reduce((acc, c) => acc * c.confidence, 1),
+          metadata: {
+            originalText: components.map(c => c.metadata?.originalText).filter(Boolean).join(' '),
+            ...components.reduce((acc, c) => ({ ...acc, ...c.metadata }), {})
+          }
+        };
+      }
+    }
+    
     return {
       type: 'date',
       value: datetime,
       span,
       confidence: components.reduce((acc, c) => acc * c.confidence, 1),
       metadata: {
-        originalText: components.map(c => c.metadata?.originalText).join(' ')
+        originalText: components.map(c => c.metadata?.originalText).filter(Boolean).join(' '),
+        ...components.reduce((acc, c) => ({ ...acc, ...c.metadata }), {})
       }
     };
   }
 
   // If we just have a date
   if (baseDate) {
+    // Only consider range types that weren't skipped
+    const hasRangeType = components.some(c => 
+      c.type === 'range' && 
+      !(c.metadata?.rangeType === 'timeOfDay' && baseTime)
+    );
     return {
-      type: 'date',
-      value: baseDate,
+      type: hasRangeType ? 'range' : 'date',
+      value: hasRangeType ? { start: baseDate, end: baseDate.plus({ hours: 1 }) } : baseDate,
       span,
       confidence: components.reduce((acc, c) => acc * c.confidence, 1),
       metadata: {
-        originalText: components.map(c => c.metadata?.originalText).join(' ')
+        originalText: components.map(c => c.metadata?.originalText).join(' '),
+        ...components.reduce((acc, c) => ({ ...acc, ...c.metadata }), {})
       }
     };
   }
@@ -192,7 +237,8 @@ export const resolveGroup = (components: ParseComponent[]): ParseComponent | nul
       span,
       confidence: components.reduce((acc, c) => acc * c.confidence, 1),
       metadata: {
-        originalText: components.map(c => c.metadata?.originalText).join(' ')
+        originalText: components.map(c => c.metadata?.originalText).filter(Boolean).join(' '),
+        ...components.reduce((acc, c) => ({ ...acc, ...c.metadata }), {})
       }
     };
   }
@@ -219,7 +265,7 @@ export const resolveComponents = (
 ): ParseComponent | null => {
   // Group compatible components
   const groups = groupCompatibleComponents(components);
-  
+
   // Resolve each group
   const results = groups
     .map(group => resolveGroup(group))

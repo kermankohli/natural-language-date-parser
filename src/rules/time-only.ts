@@ -24,7 +24,8 @@ function createTimeComponent(
     value,
     confidence: 1,
     metadata: {
-      originalText
+      originalText,
+      rangeType: 'time'
     }
   };
 }

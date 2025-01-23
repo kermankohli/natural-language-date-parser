@@ -36,4 +36,25 @@ describe('Absolute Dates Rule', () => {
     expect(result).toBeDefined();
     expect((result!.value as DateTime).toUTC().toISO()).toBe('2024-03-20T19:30:00.000Z');
   });
+
+  test('should parse date with pattern', () => {
+    const state = createParserState({});
+    const stateWithRule = registerRule(state, absoluteDatesRule);
+    const input = '2024-03-14';
+    const pattern = absoluteDatesRule.patterns[0];
+    const matches = pattern.regex.exec(input);
+
+    if (matches && pattern) {
+      const result = pattern.parse(matches, { referenceDate });
+      expect(result).not.toBeNull();
+      expect(result?.type).toBe('date');
+      expect(result?.span).toEqual({ start: 0, end: input.length });
+      expect(result?.metadata?.dateType).toBe('absolute');
+      
+      const value = result?.value as DateTime;
+      expect(value.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-14');
+      
+      expect(result?.metadata?.originalText).toBe(input);
+    }
+  });
 }); 

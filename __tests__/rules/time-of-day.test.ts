@@ -25,6 +25,7 @@ describe('Time of Day Rule', () => {
         expect(result).not.toBeNull();
         expect(result?.type).toBe('range');
         expect(result?.span).toEqual({ start: 0, end: 7 });
+        expect(result?.metadata?.rangeType).toBe('timeOfDay');
         
         const value = result?.value as { start: DateTime; end: DateTime };
         expect(value.start.hour).toBe(DEFAULT_TIME_OF_DAY_PREFERENCES.morning.start);

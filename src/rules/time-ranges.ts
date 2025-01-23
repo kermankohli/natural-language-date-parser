@@ -41,8 +41,8 @@ function createTimeRangeComponent(
     value: { start, end },
     confidence: 1,
     metadata: {
-      isTimeRange: true,
-      originalText
+      originalText,
+      rangeType: 'time'
     }
   };
 }

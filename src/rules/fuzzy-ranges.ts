@@ -130,8 +130,8 @@ function createFuzzyRangeComponent(
     value: { start, end },
     confidence: 1.0,
     metadata: {
-      isFuzzyRange: true,
-      originalText
+      originalText,
+      rangeType: 'fuzzy'
     }
   };
 }

@@ -28,71 +28,22 @@ const PART_RANGES = {
 };
 
 function createPartialMonthComponent(
-  monthNum: number,
-  range: { start: number; end: number },
+  start: DateTime,
+  end: DateTime,
   span: { start: number; end: number },
   originalText: string,
   preferences: DateParsePreferences
 ): ParseComponent {
-  const referenceYear = preferences.referenceDate?.year || DateTime.now().year;
-  const targetZone = preferences.timeZone || 'UTC';
-  Logger.debug('Using timezone', { targetZone });
-
-  if (preferences.timeZone) {
-    // If timezone specified, create dates directly in target timezone
-    const start = DateTime.fromObject(
-      { year: referenceYear, month: monthNum, day: range.start },
-      { zone: targetZone }
-    ).startOf('day');
-    
-    const end = DateTime.fromObject(
-      { year: referenceYear, month: monthNum, day: range.end },
-      { zone: targetZone }
-    ).endOf('day');
-
-    Logger.debug('Created dates', { 
-      start: start.toISO(),
-      end: end.toISO()
-    });
-
-    return {
-      type: 'range',
-      span,
-      value: { start, end },
-      confidence: 1.0,
-      metadata: {
-        isPartialMonth: true,
-        originalText
-      }
-    };
-  } else {
-    // Otherwise use UTC
-    const start = DateTime.fromObject(
-      { year: referenceYear, month: monthNum, day: range.start },
-      { zone: 'UTC' }
-    ).startOf('day');
-    
-    const end = DateTime.fromObject(
-      { year: referenceYear, month: monthNum, day: range.end },
-      { zone: 'UTC' }
-    ).endOf('day');
-
-    Logger.debug('Created dates', { 
-      start: start.toISO(),
-      end: end.toISO()
-    });
-
-    return {
-      type: 'range',
-      span,
-      value: { start, end },
-      confidence: 1.0,
-      metadata: {
-        isPartialMonth: true,
-        originalText
-      }
-    };
-  }
+  return {
+    type: 'range',
+    span,
+    value: { start, end },
+    confidence: 1,
+    metadata: {
+      originalText,
+      rangeType: 'partialMonth'
+    }
+  };
 }
 
 export const partialMonthRule: RuleModule = {
@@ -124,13 +75,59 @@ export const partialMonthRule: RuleModule = {
         const matchStart = matches.index + (fullMatch.startsWith(' ') ? 1 : 0);
         const matchEnd = matchStart + fullMatch.trim().length;
 
-        return createPartialMonthComponent(
-          monthNum,
-          range,
-          { start: matchStart, end: matchEnd },
-          fullMatch.trim(),
-          preferences
-        );
+        const referenceYear = preferences.referenceDate?.year || DateTime.now().year;
+        const targetZone = preferences.timeZone || 'UTC';
+        Logger.debug('Using timezone', { targetZone });
+
+        if (preferences.timeZone) {
+          // If timezone specified, create dates directly in target timezone
+          const start = DateTime.fromObject(
+            { year: referenceYear, month: monthNum, day: range.start },
+            { zone: targetZone }
+          ).startOf('day');
+          
+          const end = DateTime.fromObject(
+            { year: referenceYear, month: monthNum, day: range.end },
+            { zone: targetZone }
+          ).endOf('day');
+
+          Logger.debug('Created dates', { 
+            start: start.toISO(),
+            end: end.toISO()
+          });
+
+          return createPartialMonthComponent(
+            start,
+            end,
+            { start: matchStart, end: matchEnd },
+            fullMatch.trim(),
+            preferences
+          );
+        } else {
+          // Otherwise use UTC
+          const start = DateTime.fromObject(
+            { year: referenceYear, month: monthNum, day: range.start },
+            { zone: 'UTC' }
+          ).startOf('day');
+          
+          const end = DateTime.fromObject(
+            { year: referenceYear, month: monthNum, day: range.end },
+            { zone: 'UTC' }
+          ).endOf('day');
+
+          Logger.debug('Created dates', { 
+            start: start.toISO(),
+            end: end.toISO()
+          });
+
+          return createPartialMonthComponent(
+            start,
+            end,
+            { start: matchStart, end: matchEnd },
+            fullMatch.trim(),
+            preferences
+          );
+        }
       }
     }
   ]

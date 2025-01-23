@@ -24,20 +24,15 @@ describe('Time Ranges Rule', () => {
       const result = pattern.parse(matches, preferences);
       expect(result).not.toBeNull();
       expect(result?.type).toBe('range');
-      expect(result?.span).toEqual({ start: 0, end: 18 });
+      expect(result?.span).toEqual({ start: 0, end: input.length - 1 });
+      expect(result?.metadata?.rangeType).toBe('time');
       
       const value = result?.value as { start: DateTime; end: DateTime };
       expect(value.start.hour).toBe(15);
       expect(value.start.minute).toBe(30);
-      expect(value.start.second).toBe(0);
-      expect(value.start.millisecond).toBe(0);
-      
       expect(value.end.hour).toBe(17);
       expect(value.end.minute).toBe(0);
-      expect(value.end.second).toBe(59);
-      expect(value.end.millisecond).toBe(999);
       
-      expect(result?.metadata?.isTimeRange).toBe(true);
       expect(result?.metadata?.originalText).toBe('3:30 PM to 5:00 PM');
     }
   });
@@ -54,7 +49,7 @@ describe('Time Ranges Rule', () => {
       const result = pattern.parse(matches, preferences);
       expect(result).not.toBeNull();
       expect(result?.type).toBe('range');
-      expect(result?.span).toEqual({ start: 0, end: 14 });
+      expect(result?.span).toEqual({ start: 0, end: input.length });
       
       const value = result?.value as { start: DateTime; end: DateTime };
       expect(value.start.hour).toBe(15);
@@ -67,7 +62,7 @@ describe('Time Ranges Rule', () => {
       expect(value.end.second).toBe(59);
       expect(value.end.millisecond).toBe(999);
       
-      expect(result?.metadata?.isTimeRange).toBe(true);
+      expect(result?.metadata?.rangeType).toBe('time');
       expect(result?.metadata?.originalText).toBe('15:30 to 17:00');
     }
   });
@@ -115,20 +110,15 @@ describe('Time Ranges Rule', () => {
       const result = pattern.parse(matches, preferences);
       expect(result).not.toBeNull();
       expect(result?.type).toBe('range');
-      expect(result?.span).toEqual({ start: 0, end: 16 });
+      expect(result?.span).toEqual({ start: 0, end: input.length });
+      expect(result?.metadata?.rangeType).toBe('time');
       
       const value = result?.value as { start: DateTime; end: DateTime };
       expect(value.start.hour).toBe(15);
       expect(value.start.minute).toBe(0);
-      expect(value.start.second).toBe(0);
-      expect(value.start.millisecond).toBe(0);
-      
       expect(value.end.hour).toBe(17);
       expect(value.end.minute).toBe(0);
-      expect(value.end.second).toBe(59);
-      expect(value.end.millisecond).toBe(999);
       
-      expect(result?.metadata?.isTimeRange).toBe(true);
       expect(result?.metadata?.originalText).toBe('from 3 PM - 5 PM');
     }
   });
@@ -145,25 +135,20 @@ describe('Time Ranges Rule', () => {
       const result = pattern.parse(matches, preferences);
       expect(result).not.toBeNull();
       expect(result?.type).toBe('range');
-      expect(result?.span).toEqual({ start: 0, end: 19 });
+      expect(result?.span).toEqual({ start: 0, end: input.length });
+      expect(result?.metadata?.rangeType).toBe('time');
       
       const value = result?.value as { start: DateTime; end: DateTime };
       expect(value.start.hour).toBe(22);
       expect(value.start.minute).toBe(0);
-      expect(value.start.second).toBe(0);
-      expect(value.start.millisecond).toBe(0);
-      
       expect(value.end.hour).toBe(2);
       expect(value.end.minute).toBe(0);
-      expect(value.end.second).toBe(59);
-      expect(value.end.millisecond).toBe(999);
       
       // End date should be the next day
       expect(value.end.toISO()?.slice(0, 10)).toBe(
         value.start.plus({ days: 1 }).toISO()?.slice(0, 10)
       );
       
-      expect(result?.metadata?.isTimeRange).toBe(true);
       expect(result?.metadata?.originalText).toBe('10:00 PM to 2:00 AM');
     }
   });

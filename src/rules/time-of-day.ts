@@ -70,7 +70,7 @@ function createTimeOfDayComponent(
     confidence: 1,
     metadata: {
       originalText,
-      isTimeOfDay: true
+      rangeType: 'timeOfDay'
     }
   };
 }
@@ -98,7 +98,7 @@ export const timeOfDayRule: RuleModule = {
   patterns: [
     {
       // Matches "morning", "early morning", "late afternoon", etc.
-      regex: /^(?:(early|mid|late)\s+)?(morning|afternoon|evening|night)$/i,
+      regex: /(?:(early|mid|late)\s+)?(morning|afternoon|evening|night)/i,
       parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
         const [fullMatch, modifier, timeOfDay] = matches;
         

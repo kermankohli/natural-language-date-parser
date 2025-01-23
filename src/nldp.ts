@@ -51,7 +51,7 @@ function componentToResult(component: ParseComponent | null): ParseResult | null
     type: resultType,
     confidence: component.confidence,
     start: date,
-    end: date,
+    end: undefined,
     text: component.metadata?.originalText || '',
     debugTrace: component.debugTrace
   };
