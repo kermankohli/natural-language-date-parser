@@ -36,18 +36,13 @@ function getWeekRange(date: DateTime, weekStartsOn: number = 1, preferences: Dat
   // First, ensure we're in the right timezone
   const targetZone = preferences.timeZone || (date.zoneName || 'UTC');
   const operationalDate = date.zoneName !== targetZone ? date.setZone(targetZone) : date;
-  console.log('operationalDate', operationalDate)
   
   // Convert weekStartsOn from 0-6 (Sunday=0) to 1-7 (Monday=1) for Luxon
   const luxonWeekStart = weekStartsOn === 0 ? 7 : weekStartsOn;
-  console.log('weekStartsOn', weekStartsOn)
-  console.log('luxonWeekStart', luxonWeekStart)
 
   // Use Luxon's built-in startOf('week') with the correct weekday
   const start = operationalDate.set({ weekday: luxonWeekStart as 1|2|3|4|5|6|7 }).startOf('day');
-  console.log('start',  start)
   const end = start.plus({ days: 6 }).endOf('day');
-  console.log('end', end)
 
   // If we're past the week start, move to next week
   if (operationalDate.weekday < luxonWeekStart) {
@@ -85,19 +80,15 @@ const patterns: Pattern[] = [
       let range;
       switch (modifier.toLowerCase()) {
         case 'next':
-          console.log('next')
           range = getNextWeekRange(referenceDate, weekStartsOn, preferences);
           break;
         case 'last':
-          console.log('last')
           range = getLastWeekRange(referenceDate, weekStartsOn, preferences);
           break;
         default:
-          console.log('default')
           range = getWeekRange(referenceDate, weekStartsOn, preferences);
       }
 
-      console.log(range)
       return createWeekComponent(range.start, range.end, { start: 0, end: fullMatch.length }, fullMatch, preferences);
     }
   },

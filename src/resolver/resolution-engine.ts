@@ -305,7 +305,7 @@ export const resolveComponents = (
   // Group compatible components
   const groups = groupCompatibleComponents(components);
 
-  console.log(JSON.stringify(groups, null, 2));
+  // console.log(JSON.stringify(groups, null, 2));
 
   // Resolve each group
   const results = groups
