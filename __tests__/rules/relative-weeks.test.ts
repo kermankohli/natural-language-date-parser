@@ -10,10 +10,12 @@ describe('Relative Weeks Rule', () => {
     state = registerRule(state, relativeWeeksRule);
 
     const pattern = state.rules[0].patterns.find(p => p.regex.test('this week'));
-    const result = pattern?.parse(pattern.regex.exec('this week')!, { referenceDate });
-    expect(result?.type).toBe('date');
-    expect((result?.value as any).start.toISO()?.slice(0, 10)).toBe('2024-03-10');
-    expect((result?.value as any).end?.toISO()?.slice(0, 10)).toBe('2024-03-16');
+    const result = pattern?.parse(pattern.regex.exec('this week')!, { referenceDate, debug: true });
+    console.log(pattern);
+    console.log(result);
+    expect(result?.type).toBe('range');
+    expect((result?.value as any).start.toISO()?.slice(0, 10)).toBe('2024-03-11');
+    expect((result?.value as any).end?.toISO()?.slice(0, 10)).toBe('2024-03-17');
   });
 
   test('next week', () => {
@@ -22,9 +24,9 @@ describe('Relative Weeks Rule', () => {
 
     const pattern = state.rules[0].patterns.find(p => p.regex.test('next week'));
     const result = pattern?.parse(pattern.regex.exec('next week')!, { referenceDate });
-    expect(result?.type).toBe('date');
-    expect((result?.value as any).start?.toISO()?.slice(0, 10)).toBe('2024-03-17');
-    expect((result?.value as any).end?.toISO()?.slice(0, 10)).toBe('2024-03-23');
+    expect(result?.type).toBe('range');
+    expect((result?.value as any).start?.toISO()?.slice(0, 10)).toBe('2024-03-18');
+    expect((result?.value as any).end?.toISO()?.slice(0, 10)).toBe('2024-03-24');
   });
 
   test('last week', () => {
@@ -33,9 +35,9 @@ describe('Relative Weeks Rule', () => {
 
     const pattern = state.rules[0].patterns.find(p => p.regex.test('last week'));
     const result = pattern?.parse(pattern.regex.exec('last week')!, { referenceDate });
-    expect(result?.type).toBe('date');
-    expect((result?.value as any).start?.toISO()?.slice(0, 10)).toBe('2024-03-03');
-    expect((result?.value as any).end?.toISO()?.slice(0, 10)).toBe('2024-03-09');
+    expect(result?.type).toBe('range');
+    expect((result?.value as any).start?.toISO()?.slice(0, 10)).toBe('2024-03-04');
+    expect((result?.value as any).end?.toISO()?.slice(0, 10)).toBe('2024-03-10');
   });
 
   test('week start configuration', () => {
@@ -63,24 +65,24 @@ describe('Relative Weeks Rule', () => {
 
     const pattern = state.rules[0].patterns.find(p => p.regex.test('upcoming week'));
     const result = pattern?.parse(pattern.regex.exec('upcoming week')!, { referenceDate });
-    expect(result?.type).toBe('date');
-    expect((result?.value as any).start?.toISO()?.slice(0, 10)).toBe('2024-03-17'); // Start of next week
-    expect((result?.value as any).end?.toISO()?.slice(0, 10)).toBe('2024-03-23'); // End of next week
+    expect(result?.type).toBe('range');
+    expect((result?.value as any).start?.toISO()?.slice(0, 10)).toBe('2024-03-18');
+    expect((result?.value as any).end?.toISO()?.slice(0, 10)).toBe('2024-03-24');
 
     // Test behavior on different days of the week
     const mondayRef = DateTime.fromISO('2024-03-11T12:00:00Z');
     const mondayResult = pattern?.parse(pattern.regex.exec('upcoming week')!, { referenceDate: mondayRef });
-    expect((mondayResult?.value as any).start?.toISO()?.slice(0, 10)).toBe('2024-03-17'); // Should be next week
-    expect((mondayResult?.value as any).end?.toISO()?.slice(0, 10)).toBe('2024-03-23');
+    expect((mondayResult?.value as any).start?.toISO()?.slice(0, 10)).toBe('2024-03-18'); // Should be next week
+    expect((mondayResult?.value as any).end?.toISO()?.slice(0, 10)).toBe('2024-03-24');
 
     const wednesdayRef = DateTime.fromISO('2024-03-13T12:00:00Z');
     const wednesdayResult = pattern?.parse(pattern.regex.exec('upcoming week')!, { referenceDate: wednesdayRef });
-    expect((wednesdayResult?.value as any).start?.toISO()?.slice(0, 10)).toBe('2024-03-17'); // Should be next week
-    expect((wednesdayResult?.value as any).end?.toISO()?.slice(0, 10)).toBe('2024-03-23');
+    expect((wednesdayResult?.value as any).start?.toISO()?.slice(0, 10)).toBe('2024-03-18'); // Should be next week
+    expect((wednesdayResult?.value as any).end?.toISO()?.slice(0, 10)).toBe('2024-03-24');
 
     const fridayRef = DateTime.fromISO('2024-03-15T12:00:00Z');
     const fridayResult = pattern?.parse(pattern.regex.exec('upcoming week')!, { referenceDate: fridayRef });
-    expect((fridayResult?.value as any).start?.toISO()?.slice(0, 10)).toBe('2024-03-17'); // Should be next week
-    expect((fridayResult?.value as any).end?.toISO()?.slice(0, 10)).toBe('2024-03-23');
+    expect((fridayResult?.value as any).start?.toISO()?.slice(0, 10)).toBe('2024-03-18'); // Should be next week
+    expect((fridayResult?.value as any).end?.toISO()?.slice(0, 10)).toBe('2024-03-24');
   });
 }); 

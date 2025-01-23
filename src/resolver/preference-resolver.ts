@@ -1,6 +1,5 @@
 import { DateTime } from 'luxon';
 import { DateParsePreferences } from '../types/types';
-import { Logger } from '../utils/Logger';
 import { ParseComponent } from './resolution-engine';
 
 /**
@@ -18,24 +17,27 @@ export function resolvePreferences(
 
   // Helper to apply timezone and reference date to a DateTime
   const applyToDateTime = (dt: DateTime): DateTime => {
-    let result = dt;
+    // Ensure we have a valid DateTime object
+    let result = DateTime.isDateTime(dt) ? dt : DateTime.fromJSDate(new Date(dt));
     
     // If date is relative (no year/month/day), use reference date
-    if (!dt.isValid || dt.year === 1970) {
-      result = referenceDate.set({
-        hour: dt.hour,
-        minute: dt.minute,
-        second: dt.second
-      });
+    if (!result.isValid || result.year === 1970) {
+      // Only set time components if they exist
+      const timeComponents: any = {};
+      if (!isNaN(result.hour)) timeComponents.hour = result.hour;
+      if (!isNaN(result.minute)) timeComponents.minute = result.minute;
+      if (!isNaN(result.second)) timeComponents.second = result.second;
+      
+      result = referenceDate.set(timeComponents);
     }
     
     // For UTC, convert directly to UTC
     if (timeZone === 'UTC') {
-      result = dt.toUTC();
+      result = result.toUTC();
     }
     // For other timezones, preserve wall time
-    else if (dt.zone.name !== timeZone) {
-      result = dt.setZone(timeZone, { keepLocalTime: true });
+    else if (!result.zone || result.zone.name !== timeZone) {
+      result = result.setZone(timeZone, { keepLocalTime: true });
     }
     
     return result;

@@ -1,6 +1,6 @@
 import { DateParsePreferences, ParseResult, RuleModule } from '../types/types';
 import { TokenizerOptions } from '../tokenizer/tokenizer';
-import { debugTrace, ParseTrace } from '../utils/debug-trace';
+import { debugTrace } from '../utils/debug-trace';
 import { Logger } from '../utils/Logger';
 import { ParseComponent, resolveComponents } from '../resolver/resolution-engine';
 import { resolvePreferences } from '../resolver/preference-resolver';
