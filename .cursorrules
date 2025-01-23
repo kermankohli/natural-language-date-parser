@@ -1,3 +1,4 @@
 - Delete unused imports and functions
 - Run any debug test cases with LOG_LEVEL=debug
 - Before trying to fix a test case, ensure the test case is correct itself!
+- When trying to add a new pattern, ensure it is not already covered by an existing pattern or cannot be covered by merging existing patterns at the resolver level.

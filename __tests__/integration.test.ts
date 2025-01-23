@@ -349,4 +349,40 @@ describe('Natural Language Date Parser', () => {
       expect(result?.end?.toISO()?.slice(0, 10)).toBe('2025-02-02');   // Sunday
     });
   });
+
+  describe('time of day with relative weeks', () => {
+    it('should parse afternoon next week', () => {
+      const result = parser.parse('afternoon next week', { debug: true });
+      expect(result?.start.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-18');
+      expect(result?.start.hour).toBe(12); // Afternoon starts at 12:00
+      expect(result?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-24');
+      expect(result?.end?.hour).toBe(16); // Afternoon ends at 16:00
+    });
+
+    it('should parse early morning this week', () => {
+      const result = parser.parse('early morning this week', { debug: true });
+      expect(result?.start.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-11');
+      expect(result?.start.hour).toBe(7); // Early morning starts at 7:00
+      expect(result?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-17');
+      expect(result?.end?.hour).toBe(8); // Early morning ends at 8:00
+    });
+
+    it('should parse evening last week', () => {
+      const result = parser.parse('evening last week', { debug: true });
+      expect(result?.start.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-04');
+      expect(result?.start.hour).toBe(17); // Evening starts at 17:00
+      expect(result?.end?.toUTC().toISO()?.slice(0, 10)).toBe('2024-03-10');
+      expect(result?.end?.hour).toBe(20); // Evening ends at 20:00
+    });
+
+    it('should handle timezone correctly', () => {
+      const result = parser.parse('afternoon next week', {
+        timeZone: 'America/New_York',
+        debug: true
+      });
+      expect(result?.start.zoneName).toBe('America/New_York');
+      expect(result?.start.hour).toBe(12); // Afternoon starts at 12:00 local time
+      expect(result?.end?.hour).toBe(16); // Afternoon ends at 16:00 local time
+    });
+  });
 }); 

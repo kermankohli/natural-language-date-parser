@@ -20,7 +20,7 @@ export interface ParseComponent {
  * 3. Position in text (earlier matches first)
  */
 export const sortComponents = (components: ParseComponent[]): ParseComponent[] => {
-  return [...components].sort((a, b) => {
+  const sorted = [...components].sort((a, b) => {
     // First by span length
     const aLength = a.span.end - a.span.start;
     const bLength = b.span.end - b.span.start;
@@ -32,13 +32,16 @@ export const sortComponents = (components: ParseComponent[]): ParseComponent[] =
     // Finally by position
     return a.span.start - b.span.start;
   });
+
+  return sorted;
 };
 
 /**
  * Check if two components have overlapping spans in the original text
  */
 export const hasOverlap = (a: ParseComponent, b: ParseComponent): boolean => {
-  return !(a.span.end <= b.span.start || b.span.end <= a.span.start);
+  const overlaps = !(a.span.end <= b.span.start || b.span.end <= a.span.start);
+  return overlaps;
 };
 
 /**
@@ -106,6 +109,7 @@ export const resolveGroup = (components: ParseComponent[]): ParseComponent | nul
   
   // Process each component
   for (const component of sortedByType) {
+
     switch (component.type) {
       case 'date':
         baseDate = component.value as DateTime;
