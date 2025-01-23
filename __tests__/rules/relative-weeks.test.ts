@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon';
 import { createParserState, registerRule } from '../../src/parser/parser-engine';
 import { relativeWeeksRule } from '../../src/rules/relative-weeks';
+import { DateParsePreferences } from '../../src/types/types';
 
 describe('Relative Weeks Rule', () => {
   const referenceDate = DateTime.fromISO('2024-03-14T12:00:00Z');
@@ -82,5 +83,61 @@ describe('Relative Weeks Rule', () => {
     const fridayResult = pattern?.parse(pattern.regex.exec('upcoming week')!, { referenceDate: fridayRef });
     expect((fridayResult?.value as any).start?.toISO()?.slice(0, 10)).toBe('2024-03-18'); // Should be next week
     expect((fridayResult?.value as any).end?.toISO()?.slice(0, 10)).toBe('2024-03-24');
+  });
+
+  describe('Time of day with relative weeks', () => {
+    const referenceDate = DateTime.fromISO('2024-01-15T12:00:00Z');
+    const preferences: DateParsePreferences = {
+      referenceDate,
+      weekStartsOn: 1, // Monday
+      timeZone: 'UTC'
+    };
+
+    test('afternoon next week', () => {
+      const pattern = relativeWeeksRule.patterns[0];
+      const matches = pattern.regex.exec('afternoon next week');
+      const result = pattern.parse(matches!, preferences);
+
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('range');
+      
+      const { start, end } = result!.value as { start: DateTime; end: DateTime };
+      
+      // Next week should start on Monday Jan 22 and end on Sunday Jan 28
+      // Afternoon is 12:00-16:00
+      expect(start.toISO()).toBe('2024-01-22T12:00:00.000Z');
+      expect(end.toISO()).toBe('2024-01-28T16:00:00.000Z');
+    });
+
+    test('early morning this week', () => {
+      const pattern = relativeWeeksRule.patterns[0];
+      const matches = pattern.regex.exec('early morning this week');
+      const result = pattern.parse(matches!, preferences);
+
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('range');
+      
+      const { start, end } = result!.value as { start: DateTime; end: DateTime };
+      
+      // This week should start on Monday Jan 15 and end on Sunday Jan 21
+      // Early morning is 7:00-8:00
+      expect(start.toISO()).toBe('2024-01-15T07:00:00.000Z');
+      expect(end.toISO()).toBe('2024-01-21T08:00:00.000Z');
+    });
+
+    test('just next week (no time of day)', () => {
+      const pattern = relativeWeeksRule.patterns[0];
+      const matches = pattern.regex.exec('next week');
+      const result = pattern.parse(matches!, preferences);
+
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('range');
+      
+      const { start, end } = result!.value as { start: DateTime; end: DateTime };
+      
+      // Next week should start on Monday Jan 22 and end on Sunday Jan 28
+      expect(start.toISO()).toBe('2024-01-22T00:00:00.000Z');
+      expect(end.toISO()).toBe('2024-01-28T23:59:59.999Z');
+    });
   });
 }); 

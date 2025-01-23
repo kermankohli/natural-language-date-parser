@@ -1,6 +1,7 @@
 import { RuleModule, IntermediateParse, ParseResult, DateParsePreferences, Pattern } from '../types/types';
 import { DateTime } from 'luxon';
 import { ParseComponent } from '../resolver/resolution-engine';
+import { timeOfDayRule } from './time-of-day';
 
 function createWeekComponent(
   start: DateTime,
@@ -70,15 +71,15 @@ function getLastWeekRange(date: DateTime, weekStartsOn: number = 1, preferences:
 
 const patterns: Pattern[] = [
   {
-    regex: /^(this|next|last)\s+week(?:\s+|$)/i,
+    regex: /^(?:(?:(early|mid|late)\s+)?(morning|afternoon|evening|night)\s+)?(this|next|last)\s+week(?:\s+|$)/i,
     parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
-      const [fullMatch, modifier] = matches;
+      const [fullMatch, modifier, timeOfDay, weekModifier] = matches;
 
       const referenceDate = preferences.referenceDate || DateTime.now();
       const weekStartsOn = preferences.weekStartsOn;
       
       let range;
-      switch (modifier.toLowerCase()) {
+      switch (weekModifier.toLowerCase()) {
         case 'next':
           range = getNextWeekRange(referenceDate, weekStartsOn, preferences);
           break;
@@ -89,7 +90,38 @@ const patterns: Pattern[] = [
           range = getWeekRange(referenceDate, weekStartsOn, preferences);
       }
 
-      return createWeekComponent(range.start, range.end, { start: 0, end: fullMatch.length }, fullMatch, preferences);
+      // If no time of day specified, return just the week range
+      if (!timeOfDay) {
+        return createWeekComponent(range.start, range.end, { start: 0, end: fullMatch.length }, fullMatch, preferences);
+      }
+
+      // Get the time of day range using the existing rule
+      const timeOfDayPattern = timeOfDayRule.patterns[0];
+      const timeOfDayMatches = timeOfDayPattern.regex.exec(
+        modifier ? `${modifier} ${timeOfDay}` : timeOfDay
+      );
+      if (!timeOfDayMatches) return null;
+      const timeRange = timeOfDayPattern.parse(timeOfDayMatches, preferences);
+      if (!timeRange || timeRange.type !== 'range' || !timeRange.value || typeof timeRange.value !== 'object' || !('start' in timeRange.value)) {
+        return null;
+      }
+
+      // Apply the time range to the week range
+      const start = range.start.set({
+        hour: timeRange.value.start.hour,
+        minute: timeRange.value.start.minute,
+        second: 0,
+        millisecond: 0
+      });
+
+      const end = range.end.set({
+        hour: timeRange.value.end.hour,
+        minute: timeRange.value.end.minute,
+        second: 0,
+        millisecond: 0
+      });
+
+      return createWeekComponent(start, end, { start: 0, end: fullMatch.length }, fullMatch, preferences);
     }
   },
   {
