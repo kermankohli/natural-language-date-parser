@@ -126,4 +126,50 @@ describe('Ordinal Weeks Rule', () => {
       expect(sundayResult?.metadata?.originalText).toBe(input);
     }
   });
+
+  test('second to last week', () => {
+    const input = 'second to last week of june';
+    const pattern = findPatternForInput(input);
+    expect(pattern).toBeDefined();
+
+    const matches = pattern?.regex.exec(input);
+    expect(matches).not.toBeNull();
+
+    if (matches && pattern) {
+      const result = pattern.parse(matches, { referenceDate });
+      expect(result).not.toBeNull();
+      expect(result?.type).toBe('range');
+      expect(result?.span).toEqual({ start: 0, end: input.length });
+      expect(result?.metadata?.rangeType).toBe('ordinalWeek');
+      
+      const value = result?.value as { start: DateTime; end: DateTime };
+      expect(value.start.toUTC().toISO()?.slice(0, 10)).toBe('2024-06-17');
+      expect(value.end.toUTC().toISO()?.slice(0, 10)).toBe('2024-06-23');
+      
+      expect(result?.metadata?.originalText).toBe(input);
+    }
+  });
+
+  test('third to last week', () => {
+    const input = 'third to last week of august';
+    const pattern = findPatternForInput(input);
+    expect(pattern).toBeDefined();
+
+    const matches = pattern?.regex.exec(input);
+    expect(matches).not.toBeNull();
+
+    if (matches && pattern) {
+      const result = pattern.parse(matches, { referenceDate });
+      expect(result).not.toBeNull();
+      expect(result?.type).toBe('range');
+      expect(result?.span).toEqual({ start: 0, end: input.length });
+      expect(result?.metadata?.rangeType).toBe('ordinalWeek');
+      
+      const value = result?.value as { start: DateTime; end: DateTime };
+      expect(value.start.toUTC().toISO()?.slice(0, 10)).toBe('2024-08-12');
+      expect(value.end.toUTC().toISO()?.slice(0, 10)).toBe('2024-08-18');
+      
+      expect(result?.metadata?.originalText).toBe(input);
+    }
+  });
 }); 
