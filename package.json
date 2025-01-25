@@ -30,7 +30,7 @@
   "author": "Kerman Kohli",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kermankohli/natural-language-date-parser"
+    "url": "git+https://github.com/kermankohli/natural-language-date-parser.git"
   },
   "license": "MIT",
   "devDependencies": {
