@@ -1,19 +1,37 @@
 {
   "name": "natural-language-date-parser",
-  "version": "0.1.0",
-  "description": "A modular date/time parser",
+  "version": "1.0.0",
+  "description": "A modular date/time parser for converting natural language into dates and times",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "scripts": {
     "build": "tsc",
     "test": "jest",
-    "dev": "ts-node src/index.ts"
+    "dev": "ts-node src/index.ts",
+    "prepublishOnly": "npm run test && npm run build"
   },
   "keywords": [
     "date",
     "parser",
-    "time"
+    "time",
+    "natural-language",
+    "datetime",
+    "date-parser",
+    "time-parser"
   ],
-  "author": "",
+  "author": "Kerman Kohli",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kermankohli/natural-language-date-parser"
+  },
   "license": "MIT",
   "devDependencies": {
     "@types/jest": "^29.5.12",
