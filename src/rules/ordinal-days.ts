@@ -92,6 +92,56 @@ const findNextOccurrence = (day: number, month: number | null, referenceDate: Da
   }
 };
 
+// Helper function to find nth weekday of month
+function findNthWeekdayOfMonth(year: number, month: number, weekday: number, n: number): DateTime | null {
+  const firstDayOfMonth = DateTime.utc(year, month, 1);
+  const lastDayOfMonth = firstDayOfMonth.endOf('month');
+
+  Logger.debug('Finding nth weekday', {
+    year,
+    month,
+    weekday,
+    n,
+    firstDayOfMonth: firstDayOfMonth.toISO(),
+    lastDayOfMonth: lastDayOfMonth.toISO()
+  });
+
+  // Get all occurrences of the weekday in the month
+  const occurrences: DateTime[] = [];
+  let currentDate = firstDayOfMonth;
+  
+  while (currentDate <= lastDayOfMonth) {
+    if (currentDate.weekday === weekday) {
+      occurrences.push(currentDate);
+    }
+    currentDate = currentDate.plus({ days: 1 });
+  }
+
+  Logger.debug('Found weekday occurrences', {
+    count: occurrences.length,
+    dates: occurrences.map(d => d.toISO())
+  });
+
+  if (occurrences.length === 0) return null;
+
+  // For positive indices, count from start (1-based)
+  // For negative indices, count from end (-1 is last, -2 is second to last, etc.)
+  const index = n > 0 ? n - 1 : occurrences.length + n;
+
+  if (index < 0 || index >= occurrences.length) {
+    Logger.debug('Invalid index', { index, n, length: occurrences.length });
+    return null;
+  }
+
+  Logger.debug('Selected occurrence', {
+    n,
+    index,
+    date: occurrences[index].toISO()
+  });
+
+  return occurrences[index];
+}
+
 export const ordinalDaysRule: RuleModule = {
   name: 'ordinal-days',
   patterns: [
@@ -240,6 +290,74 @@ export const ordinalDaysRule: RuleModule = {
         }
 
         return createOrdinalDayComponent(start, { start: 0, end: fullMatch.length }, fullMatch, preferences, end);
+      }
+    },
+    {
+      // Pattern for "3rd Monday of April", "last Friday of March", etc.
+      regex: /^(?:the\s+)?(?:(\d+)(?:st|nd|rd|th)|first|second|third|fourth|fifth|last|(?:second|third)\s+to\s+last)\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat)\s+(?:of\s+)?(?:the\s+)?(?:month\s+(?:of\s+)?)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)(?:\s+(\d{4}))?$/i,
+      parse: (matches: RegExpExecArray, preferences: DateParsePreferences): ParseComponent | null => {
+        Logger.debug('Parsing ordinal weekday', { matches });
+        const [fullMatch, ordinalOrNumber, weekday, month, year] = matches;
+        
+        // Convert weekday to number (1-7, Monday=1)
+        const weekdayNum = {
+          'sunday': 7, 'sun': 7,
+          'monday': 1, 'mon': 1,
+          'tuesday': 2, 'tue': 2,
+          'wednesday': 3, 'wed': 3,
+          'thursday': 4, 'thu': 4,
+          'friday': 5, 'fri': 5,
+          'saturday': 6, 'sat': 6
+        }[weekday.toLowerCase()];
+
+        if (!weekdayNum) return null;
+
+        // Convert ordinal to number
+        let n: number | undefined;
+        if (ordinalOrNumber) {
+          // First try to parse as a number (e.g. "3rd")
+          n = parseInt(ordinalOrNumber, 10);
+          if (isNaN(n)) {
+            // If not a number, try as a word (e.g. "third")
+            n = ORDINALS[ordinalOrNumber.toLowerCase()];
+          }
+        } else {
+          // Try to get the full ordinal phrase which could be compound (e.g. "second to last")
+          const ordinalPhrase = fullMatch.trim().split(/\s+(?:of|the)\s+/)[0].toLowerCase();
+          
+          // Check for compound ordinals first
+          if (ordinalPhrase.includes('to last')) {
+            const parts = ordinalPhrase.split(/\s+to\s+last/);
+            const ordinal = ORDINALS[parts[0]];
+            if (ordinal) {
+              n = -ordinal;
+            }
+          } else if (ordinalPhrase === 'last') {
+            n = -1;
+          } else {
+            // Try as a simple ordinal word (e.g. "third")
+            const firstWord = ordinalPhrase.split(/\s+/)[0];
+            n = ORDINALS[firstWord];
+          }
+        }
+        
+        if (!n) return null;
+
+        Logger.debug('Extracted ordinal', { ordinalPhrase: fullMatch.trim().split(/\s+(?:of|the)\s+/)[0], n });
+
+        const monthNum = Math.floor(MONTHS_ARRAY.indexOf(month.toLowerCase()) / 2) + 1;
+        if (monthNum < 1 || monthNum > 12) return null;
+
+        const referenceYear = year ? parseInt(year, 10) : preferences.referenceDate?.year || DateTime.now().year;
+        
+        // Find the nth weekday of the month
+        const result = findNthWeekdayOfMonth(referenceYear, monthNum, weekdayNum, n);
+        if (!result || !result.isValid) {
+          Logger.debug('Invalid date created', { year: referenceYear, month: monthNum, weekday: weekdayNum, n });
+          return null;
+        }
+
+        return createOrdinalDayComponent(result, { start: 0, end: fullMatch.length }, fullMatch, preferences);
       }
     }
   ],

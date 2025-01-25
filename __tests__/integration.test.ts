@@ -71,6 +71,23 @@ describe('Natural Language Date Parser', () => {
       expect(parser.parse('15th of March')?.start.toUTC().toISO()?.slice(0, 10))
         .toBe('2024-03-15');
     });
+
+    it('should parse ordinal weekdays', () => {
+      // Third Monday of April
+      const thirdMonday = parser.parse('3rd Monday of April');
+      expect(thirdMonday?.start.toUTC().toISO()?.slice(0, 10))
+        .toBe('2024-04-15'); // Third Monday is April 15th, 2024
+
+      // Last Friday of March
+      const lastFriday = parser.parse('last Friday of March');
+      expect(lastFriday?.start.toUTC().toISO()?.slice(0, 10))
+        .toBe('2024-03-29'); // Last Friday is March 29th, 2024
+
+      // Second to last Tuesday of March
+      const secondLastTuesday = parser.parse('second to last Tuesday of March');
+      expect(secondLastTuesday?.start.toUTC().toISO()?.slice(0, 10))
+        .toBe('2024-03-19'); // Second to last Tuesday is March 19th, 2024
+    });
   });
 
   describe('fuzzy ranges', () => {
