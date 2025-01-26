@@ -17,9 +17,9 @@
     "test": "jest",
     "dev": "ts-node src/index.ts",
     "prepublishOnly": "npm run test && npm run build",
-    "publish:patch": "npm version patch && npm publish",
-    "publish:minor": "npm version minor && npm publish",
-    "publish:major": "npm version major && npm publish"
+    "publish:patch": "npm version patch && npm publish --access public",
+    "publish:minor": "npm version minor && npm publish --access public",
+    "publish:major": "npm version major && npm publish --access public"
   },
   "keywords": [
     "date",
