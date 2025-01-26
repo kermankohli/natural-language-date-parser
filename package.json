@@ -54,5 +54,12 @@
     "luxon": "^3.5.0",
     "uuid": "^11.0.5",
     "winston": "^3.17.0"
-  }
+  },
+  "directories": {
+    "doc": "docs"
+  },
+  "bugs": {
+    "url": "https://github.com/kermankohli/natural-language-date-parser/issues"
+  },
+  "homepage": "https://github.com/kermankohli/natural-language-date-parser#readme"
 }
