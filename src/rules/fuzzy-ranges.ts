@@ -8,9 +8,12 @@ const MONTHS = {
   july: 7, august: 8, september: 9, october: 10, november: 11, december: 12
 };
 
-function getWeekendRange(referenceDate: DateTime, offset: number): { start: DateTime, end: DateTime } {
+function getWeekendRange(referenceDate: DateTime, offset: number, timeZone?: string): { start: DateTime, end: DateTime } {
   // Keep all calculations in the original timezone
-  const start = referenceDate.startOf('day');  
+  const start = timeZone 
+    ? referenceDate.setZone(timeZone).startOf('day')
+    : referenceDate.startOf('day');
+  
   // In Luxon: 1=Monday, 7=Sunday, 6=Saturday
   const currentDay = start.weekday;
   
@@ -32,7 +35,7 @@ function getWeekendRange(referenceDate: DateTime, offset: number): { start: Date
     offset,
     start: weekendStart.toISO(),
     end: weekendEnd.toISO(),
-    timezone: referenceDate.zoneName
+    timezone: timeZone || referenceDate.zoneName
   });
   
   return { start: weekendStart, end: weekendEnd };
@@ -145,7 +148,11 @@ export const fuzzyRangesRule: RuleModule = {
         const [fullMatch, modifier] = matches;
         const offset = modifier.toLowerCase() === 'next' || 
                       modifier.toLowerCase() === 'the following' ? 1 : 0;
-        const { start, end } = getWeekendRange(preferences.referenceDate || DateTime.now(), offset);
+        const { start, end } = getWeekendRange(
+          preferences.referenceDate || DateTime.now(), 
+          offset,
+          preferences.timeZone
+        );
         
         const matchStart = matches.index + (fullMatch.startsWith(' ') ? 1 : 0);
         const matchEnd = matchStart + fullMatch.trim().length;

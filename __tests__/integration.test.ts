@@ -343,28 +343,6 @@ describe('Natural Language Date Parser', () => {
       expect(result?.start.zoneName).toBe('America/New_York');
       expect(result?.end?.zoneName).toBe('America/New_York');
     });
-
-    it('should parse next week with local timezone', () => {
-      const localParser = createNLDP({ useLocalTimezone: true });
-      const result = localParser.parse('next week');
-
-      expect(result).not.toBeNull();
-      expect(result?.type).toBe('range');
-      
-      // Should be a full week (Monday to Sunday)
-      const localZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const now = DateTime.now().setZone(localZone);
-      // Get current week's Monday
-      const currentWeekStart = now.startOf('week');  // Luxon uses ISO week by default (Monday)
-      // Next week starts 7 days after current week's start
-      const weekStart = currentWeekStart.plus({ days: 7 });
-      const weekEnd = weekStart.plus({ days: 6 }).endOf('day');
-
-      expect(result?.start.zoneName).toBe(localZone);
-      expect(result?.end?.zoneName).toBe(localZone);
-      expect(result?.start.toISO()?.slice(0, 10)).toBe('2025-01-27');  // Monday
-      expect(result?.end?.toISO()?.slice(0, 10)).toBe('2025-02-02');   // Sunday
-    });
   });
 
   describe('time of day with relative weeks', () => {

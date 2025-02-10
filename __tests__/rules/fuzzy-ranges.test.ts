@@ -185,8 +185,8 @@ describe('Fuzzy Ranges Rule', () => {
       expect(result!.span).toEqual({ start: 0, end: input.length });
       expect(result!.metadata?.rangeType).toBe('fuzzy');
       expect(result!.metadata?.originalText).toBe(input);
-      expect((result!.value as any).start.toISO()).toBe('2024-03-16T00:00:00.000+08:00');
-      expect((result!.value as any).end.toISO()).toBe('2024-03-17T23:59:59.999+08:00');
+      expect((result!.value as any).start.toISO()).toBe('2024-03-16T00:00:00.000-04:00');
+      expect((result!.value as any).end.toISO()).toBe('2024-03-17T23:59:59.999-04:00');
 
       const nextInput = 'next weekend';
       const nextMatch = findPatternForInput(nextInput, { referenceDate, timeZone: 'America/New_York' });
@@ -198,8 +198,8 @@ describe('Fuzzy Ranges Rule', () => {
       expect(nextResult!.span).toEqual({ start: 0, end: nextInput.length });
       expect(nextResult!.metadata?.rangeType).toBe('fuzzy');
       expect(nextResult!.metadata?.originalText).toBe(nextInput);
-      expect((nextResult!.value as any).start.toISO()).toBe('2024-03-23T00:00:00.000+08:00');
-      expect((nextResult!.value as any).end.toISO()).toBe('2024-03-24T23:59:59.999+08:00');
+      expect((nextResult!.value as any).start.toISO()).toBe('2024-03-23T00:00:00.000-04:00');
+      expect((nextResult!.value as any).end.toISO()).toBe('2024-03-24T23:59:59.999-04:00');
     });
   });
 }); 
