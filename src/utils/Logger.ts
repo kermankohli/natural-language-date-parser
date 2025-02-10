@@ -1,14 +1,6 @@
 import winston from 'winston';
-import path from 'path';
-import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 const { combine, timestamp, printf, colorize } = winston.format;
-
-// Ensure logs directory exists
-const logsDir = path.join(process.cwd(), 'logs');
-if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir);
-}
 
 // Track the current operation ID
 let currentOperationId: string | null = null;
@@ -51,43 +43,16 @@ const consoleFormat = printf(({ level, message, timestamp, operationId, context,
   return `[${timeStr}] ${level.padEnd(5)} [${op}] ${message}${ctx}${meta}`;
 });
 
-// JSON format for file logging
-const fileFormat = printf(({ level, message, timestamp, operationId, context, ...metadata }) => {
-  return JSON.stringify({
-    timestamp,
-    level,
-    message,
-    operationId: operationId || currentOperationId || 'no-op-id',
-    context: context || {},
-    ...metadata
-  });
-});
-
 // Create the logger instance
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: combine(
     timestamp(),
-    fileFormat
+    colorize({ all: true }),
+    consoleFormat
   ),
   transports: [
-    new winston.transports.Console({
-      format: combine(
-        colorize({ all: true }),
-        consoleFormat
-      )
-    }),
-    new winston.transports.File({ 
-      filename: path.join(logsDir, 'error.log'),
-      level: 'error',
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
-    new winston.transports.File({ 
-      filename: path.join(logsDir, 'combined.log'),
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    })
+    new winston.transports.Console()
   ],
   exitOnError: false
 });
@@ -114,7 +79,7 @@ export const Logger = {
     logger.warn(message, { context, ...meta }),
 
   info: (message: string, context: LogContext = {}, meta: Record<string, any> = {}) => 
-    Logger.debug(message, { context, ...meta }),
+    logger.info(message, { context, ...meta }),
 
   debug: (message: string, context: LogContext = {}, meta: Record<string, any> = {}) => 
     logger.debug(message, { context, ...meta }),
